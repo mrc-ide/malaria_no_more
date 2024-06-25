@@ -1,0 +1,30 @@
+.Rproj.user
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+*.csv
+*.xlsx
+*.rds
+*.RDS
+
+raw_data/
+data/
+contexts/
+diagnostics/
+
+archive/
+.outpack/
+montagu/
+hipercow/
+outputs/
+draft/
+
+src/model_country/site_files/
+# ---VVV--- added by orderly ---VVV----------------
+# Don't manually edit content between these markers
+.outpack
+orderly_envir.yml
+draft
+archive
+# ---^^^--- added by orderly ---^^^----------------
