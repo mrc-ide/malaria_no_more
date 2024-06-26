@@ -49,7 +49,7 @@ parameterise_mnm<- function(site_name,
   )
   
   
-  # set up a theoretical transmission-blocking vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
+  # set up a theoretical blood-stage vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
   if(scenario == 'new_tools'){
     
   bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
