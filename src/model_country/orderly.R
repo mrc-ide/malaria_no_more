@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'NGA',
-                             scenario = 'no-vaccination')
+orderly2::orderly_parameters(iso3c = NULL,
+                             scenario = NULL)
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
@@ -24,9 +24,7 @@ site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
 
 # make a map of input parameters for site function
 site_df<- remove_zero_eirs(iso3c, site_data)
-
-
-map<- make_analysis_map(site_df, site_data, test = TRUE)
+map<- make_mnm_analysis_map(site_df, test = FALSE)
 
 # run analysis function for each site + urban/rural combination ----
 cluster_cores <- Sys.getenv("CCP_NUMCPUS")
@@ -43,6 +41,7 @@ if (cluster_cores == "") {
   invisible(parallel::clusterCall(cl, ".libPaths", .libPaths()))
   parallel::clusterCall(cl, function() {
     message('running')
+    source('MNM_functions.R')
     library(data.table)
     library(dplyr)
     library(scene)

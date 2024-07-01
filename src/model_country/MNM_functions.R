@@ -45,7 +45,7 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = run_params$pop_val)
+    overrides = list(human_population = 5000)
   )
   
   
@@ -110,20 +110,52 @@ analyse_mnm<- function(site,
   
   # add identifying columns
   raw_output<- raw_output |>
-    mutate( iso3c = iso3c,
-            site_name = site_name,
-            ur = ur,
-            scenario = scenario)
+    mutate(iso3c = site$iso3c,
+            site_name = site$site_name,
+            ur = site$ur,
+            scenario = site$scenario)
   
   
   output <- postie::get_rates(
     raw_output,
-    time_divisor = 365,
-    baseline_t = 1999,
+    time_divisor = 30, # calculate monthly output from model
+    baseline_t = 0,
     age_divisor = 365,
     scaler = 0.215,
     treatment_scaler = 0.517,
   )
+  
+  output<- output |>
+    rename(month = t)
+
+  # # calculate cases -- multiply by population from site files
+  # pop<- site_data$population |>
+  #   filter(name_1== site$site_name,
+  #          urban_rural == site$ur) |>
+  #   select(year, pop)
+  # 
+  # output<- merge(output, pop, by = c('year')) # should I be using par_pf instead? 
+  # 
+  # output<- output |>
+  #   mutate(cases = clinical *pop,
+  #          deaths = mortality * pop,
+  #          severe = severe * pop,
+  #          ylls = yll_pp *pop,
+  #          dalys= dalys_pp * pop) |>
+  #   rename(population = pop)
+
+  output <-
+    format_outputs_mnm(
+      output,
+      iso3c = site$iso3c,
+      site_name = site$site_name,
+      ur = site$ur,
+      scenario = site$scenario,
+      gfa = FALSE,
+      description = 'malaria_no_more_runs',
+      parameter_draw = 0)
+  
+
   
   return(output)
 }
@@ -135,65 +167,17 @@ analyse_mnm<- function(site,
 #' @param test      boolean-- if true, only run analysis for two test sites. Good for quick tests of code functionality
 #' @returns analysis map to be used as an input for analyse_site
 #' @export
-make_analysis_map<- function(site_df,
-                             site_data,
-                             test){
-  
-  
-  site_data$prevalence<- site_data$prevalence |>
-    dplyr::filter(year == 2019) |>
-    mutate(run_model = ifelse(pfpr > 0.10, TRUE, FALSE))
-  
-  # make exceptions for Madagascar, Ethiopia, and Sudan
-  # hardcode for time's sake but operationalize later
-  if(unique(site_df$country) == 'Madagascar'){
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 == 'Toliary', TRUE, run_model))
-  }
-  
-  if(unique(site_df$country) == 'Ethiopia'){
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 %like% 'Gambela', TRUE, run_model))
-    
-    
-  }
-  
-  if(unique(site_df$country) == 'Sudan'){
-    
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 == 'South Darfur', TRUE, run_model)) |>
-      mutate(run_model = ifelse(name_1 == 'West Kurdufan', TRUE, run_model))
-    
-  }
-  prevalence<- site_data$prevalence |>
-    select(name_1, urban_rural, iso3c, run_model) |>
-    rename(site_name = name_1,
-           ur= urban_rural)
+make_mnm_analysis_map<- function(site_df,
+                                 test){
   
   site_df<- site_df |>
     rename(site_name = name_1,
            ur= urban_rural)
   
-  site_info<- merge(prevalence, site_df, by = c('site_name', 'ur', 'iso3c'))
   
-  if(nrow(prevalence) < nrow(site_info)){
-    stop('dropped admin units, debug')
-  }
-  
-  if(scenario == 'no-vaccination'){
-    
-    site_info<- site_info |>
-      mutate(run_model = TRUE)
-    
-  }
-  
-  site_info<- site_info |>
-    dplyr::filter(run_model == TRUE)
-  site_info<- site_info |>
-    mutate(scenario = {{scenario}})
+  site_info<- site_df |>
+    mutate(scenario = {{scenario}}) |>
+    mutate(run_model= TRUE)
   
   
   Encoding(site_info$site_name) <- "UTF-8"
@@ -209,7 +193,54 @@ make_analysis_map<- function(site_df,
   return(sites)
 }
 
-
+#' format outputs for submission
+#' @param dt  postprocessed output
+#' @param site_name name of site
+#' @param ur urbanicity
+#' @param iso3c country code
+#' @param scenario vaccine scenar.io
+#' @param description reason for model run
+#' @param gfa global fund assumptions for other interventions (boolean)
+#' @param parameter_draw parameter draw
+#' @export
+format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario, gfa, description, parameter_draw){
+  dt <- dt |>
+    mutate(
+      disease = 'Malaria',
+      country = iso3c,
+      country_name = countrycode::countrycode(
+        sourcevar = iso3c,
+        origin = 'iso3c',
+        destination = 'country.name'),
+      site_name = site_name,
+      urban_rural = ur,
+      scenario = scenario,
+      gfa = gfa,
+      description = description,
+      parameter_draw = parameter_draw
+    ) |>
+    rename(age = .data$age_lower) |>
+    select(
+      .data$disease,
+      .data$month,
+      .data$age,
+      .data$country,
+      .data$country_name,
+      .data$site_name,
+      .data$urban_rural,
+      .data$scenario,
+      .data$gfa,
+      description,
+      .data$clinical,
+      .data$mortality,
+    ) |>
+    mutate(
+      mortality = if_else(is.na(mortality), 0, mortality),
+      clinical = if_else(is.na(clinical), 0, clinical),
+    )
+  
+  return(dt)
+}
 
   
   

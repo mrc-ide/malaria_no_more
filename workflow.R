@@ -4,7 +4,9 @@
 remotes::install_github('mrc-ide/orderly2')
 remotes::install_github('mrc-ide/vimcmalaria')
 remotes::install_github('mrc-ide/scene')
-remotes::install_github('mrc-ide/postie')
+remotes::install_github('mrc-ide/postie@dalys')
+remotes::install_github('mrc-ide/site@vimc')
+
 install.packages('countrycode')
 
 # load packages
@@ -30,11 +32,18 @@ scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup')
 # to run workflow:
 # first set home directory to repository directory
 
-# then run report:
-orderly2::orderly_run('model_country',
-                      parameters= list(iso3c= 'NGA',
-                                       scenario = 'no-vaccination'))
+
 
 # this will error out unless you have saved coverage and site file inputs in your src/model-country directory--
 # contact Lydia for filepaths
+hipercow::hipercow_init(driver = 'windows')
+hipercow::hipercow_provision()
+hipercow::hipercow_environment_create(sources = 'src/model_country/MNM_functions.R')
+hipercow::hipercow_configuration()
 
+
+# then run report:
+test_task<- hipercow::task_create_expr(orderly2::orderly_run('model_country',
+                      parameters= list(iso3c= 'BFA',
+                                       scenario = 'no-vaccination')))
+hipercow::task_log_watch(test_task)
