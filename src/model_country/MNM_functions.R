@@ -45,7 +45,7 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = 5000)
+    overrides = list(human_population = 50000)
   )
   
   
@@ -260,9 +260,11 @@ run_mnm_model<- function(model_input){
     # set up a theoretical blood-stage vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
     bs_params<- copy(params)
     
+    # set efficacy for first 3 doses
     bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
     bs_params$pev_profiles[[1]]$vmax<-  bs_params$pev_profiles[[1]]$vmax + bs_efficacy
     
+    # set efficacy for booster dose
     bs_efficacy_booster<-  (1- bs_params$pev_profiles[[2]]$vmax) *.6
     bs_params$pev_profiles[[2]]$vmax<-  bs_params$pev_profiles[[2]]$vmax + bs_efficacy
     
@@ -272,6 +274,7 @@ run_mnm_model<- function(model_input){
     n_vectors<- nrow(data.frame(cc))  # number of species in this site
     
     # just for a test set carrying capacity to half of its current value
+    # will this require calibration ?
     bs_params<- bs_params |>
       set_carrying_capacity(
       carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
