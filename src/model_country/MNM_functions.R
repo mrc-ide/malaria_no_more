@@ -250,7 +250,7 @@ run_mnm_model<- function(model_input){
   }else if(scenario == 'new_tools'){
     
     first_phase <- retry::retry(
-      malariasimulation::run_resumable_simulation(intial_timesteps = 365*(29 +15), # including burnin period?
+      malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years
                                         parameters = params),
       max_tries = 5,
       when = 'error reading from connection|embedded nul|unknown type',
@@ -269,17 +269,18 @@ run_mnm_model<- function(model_input){
     
     # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
     cc <- get_init_carrying_capacity(bs_params)
+    n_vectors<- nrow(data.frame(cc))  # number of species in this site
     
     # just for a test set carrying capacity to half of its current value
     bs_params<- bs_params |>
       set_carrying_capacity(
-      carrying_capacity = cc * matrix(c(0.5), ncol = 1),
+      carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
       timesteps = 1
     )
     
     # run simulation for remaining period
-    second_phase <- run_resumable_simulation(
-      total_timesteps = bs_params$timesteps,
+    second_phase <- malariasimulation:::run_resumable_simulation(
+      timesteps = bs_params$timesteps,
       bs_params,
       initial_state=first_phase$state,
       restore_random_state=TRUE)
