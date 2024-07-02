@@ -25,7 +25,7 @@ parameterise_mnm<- function(site_name,
   site<- vimcmalaria::update_coverage_values(site,
                                 iso3c = iso3c,
                                 coverage_data,
-                                scenario_name = 'malaria-r3-r4-default')
+                                scenario_name = 'malaria-r3-r4-bluesky')
   
   if(scenario == 'no-vaccination'){
     
@@ -45,7 +45,7 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = 5000)
+    overrides = list(human_population = 50000)
   )
   
   
@@ -118,7 +118,7 @@ analyse_mnm<- function(site,
   
   output <- postie::get_rates(
     raw_output,
-    time_divisor = 30, # calculate monthly output from model
+    time_divisor = 365/12, # calculate monthly output from model
     baseline_t = 0,
     age_divisor = 365,
     scaler = 0.215,
@@ -151,9 +151,7 @@ analyse_mnm<- function(site,
       site_name = site$site_name,
       ur = site$ur,
       scenario = site$scenario,
-      gfa = FALSE,
-      description = 'malaria_no_more_runs',
-      parameter_draw = 0)
+      description = 'malaria_no_more_runs')
   
 
   
@@ -200,10 +198,8 @@ make_mnm_analysis_map<- function(site_df,
 #' @param iso3c country code
 #' @param scenario vaccine scenar.io
 #' @param description reason for model run
-#' @param gfa global fund assumptions for other interventions (boolean)
-#' @param parameter_draw parameter draw
 #' @export
-format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario, gfa, description, parameter_draw){
+format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
   dt <- dt |>
     mutate(
       disease = 'Malaria',
@@ -215,9 +211,7 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario, gfa, descripti
       site_name = site_name,
       urban_rural = ur,
       scenario = scenario,
-      gfa = gfa,
       description = description,
-      parameter_draw = parameter_draw
     ) |>
     rename(age = .data$age_lower) |>
     select(
@@ -229,7 +223,6 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario, gfa, descripti
       .data$site_name,
       .data$urban_rural,
       .data$scenario,
-      .data$gfa,
       description,
       .data$clinical,
       .data$mortality,

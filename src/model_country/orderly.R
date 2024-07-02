@@ -19,9 +19,13 @@ library(vimcmalaria)
 
 source('MNM_functions.R')
 # read in dependencies  ----
-coverage_data<- read.csv('routine_r21.csv') |> filter(year <= 2040)
+coverage_data<- read.csv('bluesky_r21.csv') |> filter(year <= 2040)
 site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
 
+if(iso3c == 'UGA'){
+  site_data <- readRDS(paste0('site_files/', iso3c, '.RDS'))
+  
+}
 # make a map of input parameters for site function
 site_df<- remove_zero_eirs(iso3c, site_data)
 map<- make_mnm_analysis_map(site_df, test = FALSE)
