@@ -45,20 +45,9 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = 50000)
+    overrides = list(human_population = 5000)
   )
   
-  
-  # set up a theoretical blood-stage vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
-  if(scenario == 'new_tools'){
-    
-  bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
-  params$pev_profiles[[1]]$vmax<-  params$pev_profiles[[1]]$vmax + bs_efficacy
-  
-  bs_efficacy_booster<-  (1- params$pev_profiles[[2]]$vmax) *.6
-  params$pev_profiles[[2]]$vmax<-  params$pev_profiles[[2]]$vmax + bs_efficacy
-    
-  }
   
   
   # set age groups
@@ -103,7 +92,7 @@ analyse_mnm<- function(site,
                             scenario)
   
   
-  model<- vimcmalaria::run_model(model_input)
+  model<- run_mnm_model(model_input)
   
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
@@ -236,4 +225,86 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
 }
 
   
+
+#' Run model for site of interest
+#' @param   model_input      list with input parameters and identifying info
+#' @returns model output
+#' @export
+run_mnm_model<- function(model_input){
+  message('running the model')
+  
+  params <- model_input$param_list
+  params$progress_bar <- TRUE
+  
+  set.seed(56)
+  
+  if(scenario %in% c('vaccine_scaleup', 'no-vaccination')){
+    model <- retry::retry(
+      malariasimulation::run_simulation(timesteps = params$timesteps,
+                                        parameters = params),
+      max_tries = 5,
+      when = 'error reading from connection|embedded nul|unknown type',
+      interval = 3
+    )
+    
+  }else if(scenario == 'new_tools'){
+    
+    first_phase <- retry::retry(
+      malariasimulation::run_resumable_simulation(intial_timesteps = 365*(29 +15), # including burnin period?
+                                        parameters = params),
+      max_tries = 5,
+      when = 'error reading from connection|embedded nul|unknown type',
+      interval = 3
+    )
+    
+    # set up a theoretical blood-stage vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
+    bs_params<- copy(params)
+    
+    bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
+    bs_params$pev_profiles[[1]]$vmax<-  bs_params$pev_profiles[[1]]$vmax + bs_efficacy
+    
+    bs_efficacy_booster<-  (1- bs_params$pev_profiles[[2]]$vmax) *.6
+    bs_params$pev_profiles[[2]]$vmax<-  bs_params$pev_profiles[[2]]$vmax + bs_efficacy
+    
+    
+    # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
+    cc <- get_init_carrying_capacity(bs_params)
+    
+    # just for a test set carrying capacity to half of its current value
+    bs_params<- bs_params |>
+      set_carrying_capacity(
+      carrying_capacity = cc * matrix(c(0.5), ncol = 1),
+      timesteps = 1
+    )
+    
+    # run simulation for remaining period
+    second_phase <- run_resumable_simulation(
+      total_timesteps = bs_params$timesteps,
+      bs_params,
+      initial_state=first_phase$state,
+      restore_random_state=TRUE)
+    
+    # bind output from first and second phase together
+    model<- rbind(first_phase$data, second_phase$data)
+    
+    }
+  
+  
+  # add identifying information to output
+  model <- model |>
+    mutate(site_name = model_input$site_name,
+           urban_rural = model_input$ur,
+           iso = model_input$iso3c,
+           description = model_input$description,
+           scenario = model_input$scenario,
+           gfa = model_input$gfa,
+           parameter_draw = model_input$parameter_draw,
+           population = model_input$pop_val,
+           burnin = model_input$burnin)
+  
+  # save model runs somewhere
+  message('saving the model')
+  return(model)
+}
+
   

@@ -6,6 +6,8 @@ remotes::install_github('mrc-ide/vimcmalaria')
 remotes::install_github('mrc-ide/scene')
 remotes::install_github('mrc-ide/postie@dalys')
 remotes::install_github('mrc-ide/site@vimc')
+remotes::install_github('mrc-ide/malariasimulation@dev')
+
 
 install.packages('countrycode')
 
