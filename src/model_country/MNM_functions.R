@@ -238,7 +238,7 @@ run_mnm_model<- function(model_input){
   
   set.seed(56)
   
-  if(scenario %in% c('vaccine_scaleup', 'no-vaccination')){
+  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination')){
     model <- retry::retry(
       malariasimulation::run_simulation(timesteps = params$timesteps,
                                         parameters = params),
@@ -247,7 +247,7 @@ run_mnm_model<- function(model_input){
       interval = 3
     )
     
-  }else if(scenario == 'new_tools'){
+  }else if(model_input$scenario == 'new_tools'){
     
     first_phase <- retry::retry(
       malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years
