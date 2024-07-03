@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             scenario = NULL)
+orderly2::orderly_parameters(iso3c = 'BFA',
+                             scenario = 'new_tools')
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
@@ -19,9 +19,13 @@ library(vimcmalaria)
 
 source('MNM_functions.R')
 # read in dependencies  ----
-coverage_data<- read.csv('routine_r21.csv') |> filter(year <= 2040)
+coverage_data<- read.csv('bluesky_r21.csv') |> filter(year <= 2040)
 site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
 
+if(iso3c == 'UGA'){
+  site_data <- readRDS(paste0('site_files/', iso3c, '.RDS'))
+  
+}
 # make a map of input parameters for site function
 site_df<- remove_zero_eirs(iso3c, site_data)
 map<- make_mnm_analysis_map(site_df, test = FALSE)
@@ -35,7 +39,7 @@ if (cluster_cores == "") {
                   site_data= site_data,
                   coverage_data=coverage_data,
                   scenario = {{scenario}})
-} else {
+ } else {
   message(sprintf("running in parallel on %s (on the cluster?)", cluster_cores))
   cl <- parallel::makeCluster(as.integer(cluster_cores))
   invisible(parallel::clusterCall(cl, ".libPaths", .libPaths()))

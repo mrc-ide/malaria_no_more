@@ -6,6 +6,8 @@ remotes::install_github('mrc-ide/vimcmalaria')
 remotes::install_github('mrc-ide/scene')
 remotes::install_github('mrc-ide/postie@dalys')
 remotes::install_github('mrc-ide/site@vimc')
+remotes::install_github('mrc-ide/malariasimulation@dev')
+
 
 install.packages('countrycode')
 
@@ -31,9 +33,9 @@ scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup')
 
 # to run workflow:
 # first set home directory to repository directory
+iso3c<- 'BFA'
 
-
-
+site_data <- readRDS(paste0('src/model_country/site_files/', iso3c, '_new_EIR.rds'))
 # this will error out unless you have saved coverage and site file inputs in your src/model-country directory--
 # contact Lydia for filepaths
 hipercow::hipercow_init(driver = 'windows')
@@ -45,5 +47,6 @@ hipercow::hipercow_configuration()
 # then run report:
 test_task<- hipercow::task_create_expr(orderly2::orderly_run('model_country',
                       parameters= list(iso3c= 'BFA',
-                                       scenario = 'no-vaccination')))
+                                       scenario = 'new_tools')),
+                      resources = hipercow::hipercow_resources(cores = 14 ))
 hipercow::task_log_watch(test_task)
