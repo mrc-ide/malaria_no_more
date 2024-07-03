@@ -268,19 +268,19 @@ run_mnm_model<- function(model_input){
     bs_efficacy_booster<-  (1- bs_params$pev_profiles[[2]]$vmax) *.6
     bs_params$pev_profiles[[2]]$vmax<-  bs_params$pev_profiles[[2]]$vmax + bs_efficacy
     
-    
-    # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
-    cc <- get_init_carrying_capacity(bs_params)
-    n_vectors<- nrow(data.frame(cc))  # number of species in this site
-    
-    # just for a test set carrying capacity to half of its current value
-    # will this require calibration ?
-    bs_params<- bs_params |>
-      set_carrying_capacity(
-      carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
-      timesteps = 1
-    )
-    
+    # 
+    # # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
+    # cc <- get_init_carrying_capacity(bs_params)
+    # n_vectors<- nrow(data.frame(cc))  # number of species in this site
+    # 
+    # # just for a test set carrying capacity to half of its current value
+    # # will this require calibration ?
+    # bs_params<- bs_params |>
+    #   set_carrying_capacity(
+    #   carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
+    #   timesteps = 1
+    # )
+    # 
     # run simulation for remaining period
     second_phase <- malariasimulation:::run_resumable_simulation(
       timesteps = bs_params$timesteps,

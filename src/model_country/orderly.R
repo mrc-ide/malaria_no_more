@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             scenario = NULL)
+orderly2::orderly_parameters(iso3c = 'BFA',
+                             scenario = 'new_tools')
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
@@ -39,7 +39,7 @@ if (cluster_cores == "") {
                   site_data= site_data,
                   coverage_data=coverage_data,
                   scenario = {{scenario}})
-} else {
+ } else {
   message(sprintf("running in parallel on %s (on the cluster?)", cluster_cores))
   cl <- parallel::makeCluster(as.integer(cluster_cores))
   invisible(parallel::clusterCall(cl, ".libPaths", .libPaths()))
