@@ -29,7 +29,7 @@ baseline<- readRDS('baseline.rds')
 outputs<- bind_rows(new_tools, scaleup, baseline)
 
 
-# quick plot of outputs under 
+# quick plot of outputs for 1-year olds
 plot<- outputs |> filter(age == 1, site_name== 'Cascades')
 
 p<- ggplot(data= plot, mapping = aes(x= (month/12) +2000, y= clinical, color= scenario, fill= scenario)) +
