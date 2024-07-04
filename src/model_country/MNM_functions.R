@@ -48,7 +48,11 @@ parameterise_mnm<- function(site_name,
     overrides = list(human_population = 50000)
   )
   
-  
+  # if(scenario == 'new_tools'){
+  # 
+  #   
+  # }
+
   
   # set age groups
   params$clinical_incidence_rendering_min_ages = run_params$min_ages
@@ -116,22 +120,6 @@ analyse_mnm<- function(site,
   
   output<- output |>
     rename(month = t)
-
-  # # calculate cases -- multiply by population from site files
-  # pop<- site_data$population |>
-  #   filter(name_1== site$site_name,
-  #          urban_rural == site$ur) |>
-  #   select(year, pop)
-  # 
-  # output<- merge(output, pop, by = c('year')) # should I be using par_pf instead? 
-  # 
-  # output<- output |>
-  #   mutate(cases = clinical *pop,
-  #          deaths = mortality * pop,
-  #          severe = severe * pop,
-  #          ylls = yll_pp *pop,
-  #          dalys= dalys_pp * pop) |>
-  #   rename(population = pop)
 
   output <-
     format_outputs_mnm(
@@ -270,17 +258,18 @@ run_mnm_model<- function(model_input){
     
     # 
     # # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
-    # cc <- get_init_carrying_capacity(bs_params)
-    # n_vectors<- nrow(data.frame(cc))  # number of species in this site
-    # 
-    # # just for a test set carrying capacity to half of its current value
-    # # will this require calibration ?
-    # bs_params<- bs_params |>
-    #   set_carrying_capacity(
-    #   carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
-    #   timesteps = 1
-    # )
-    # 
+    cc <- get_init_carrying_capacity(bs_params)
+    n_vectors<- nrow(data.frame(cc))  # number of species in this site
+
+    
+    bs_params<- bs_params |>
+      set_carrying_capacity(
+        carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
+        timesteps = 31 * 365
+      )  
+    # just for a test set carrying capacity to half of its current value
+
+
     # run simulation for remaining period
     second_phase <- malariasimulation:::run_resumable_simulation(
       timesteps = bs_params$timesteps,
