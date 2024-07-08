@@ -18,7 +18,7 @@ parameterise_mnm<- function(site_name,
   
   run_params<- vimcmalaria::pull_age_groups_time_horizon(quick_run= FALSE)
   
-  # specify vaccine coverage based on forecast  ----------------------------------
+  # specify vaccine coverage based on forecast  --------------------------------
   site<- vimcmalaria::expand_intervention_coverage(site,
                                       terminal_year = 2040)
   
@@ -37,7 +37,7 @@ parameterise_mnm<- function(site_name,
   # check the site has a non-zero EIR
   check_eir(site)
   
-  # pull parameters for this site ------------------------------------------------
+  # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
     demography = site$demography,
@@ -48,20 +48,28 @@ parameterise_mnm<- function(site_name,
     overrides = list(human_population = 50000)
   )
   
-  # if(scenario == 'new_tools'){
-  # 
-  #   
-  # }
+
+  if(scenario == 'new_tools'){
+
+cc <- get_init_carrying_capacity(params)
+n_vectors<- nrow(data.frame(cc))  # number of species in this site
+
+params<- params |>
+  set_carrying_capacity(
+    carrying_capacity = matrix(c(0.05), ncol = n_vectors),
+    timesteps = (31 + 15)  * 365
+  )
+  }
 
   
-  # set age groups
+  # # set age groups
   params$clinical_incidence_rendering_min_ages = run_params$min_ages
   params$clinical_incidence_rendering_max_ages = run_params$max_ages
   params$severe_incidence_rendering_min_ages = run_params$min_ages
   params$severe_incidence_rendering_max_ages = run_params$max_ages
   params$age_group_rendering_min_ages = run_params$min_ages
   params$age_group_rendering_max_ages = run_params$max_ages
-  
+
 
   params$pev<- TRUE
   
@@ -212,7 +220,6 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
   return(dt)
 }
 
-  
 
 #' Run model for site of interest
 #' @param   model_input      list with input parameters and identifying info
@@ -255,20 +262,6 @@ run_mnm_model<- function(model_input){
     # set efficacy for booster dose
     bs_efficacy_booster<-  (1- bs_params$pev_profiles[[2]]$vmax) *.6
     bs_params$pev_profiles[[2]]$vmax<-  bs_params$pev_profiles[[2]]$vmax + bs_efficacy
-    
-    # 
-    # # change carrying capacity for future scenario (assuming some kind of gene drive that reduces mosquito populations massively)
-    cc <- get_init_carrying_capacity(bs_params)
-    n_vectors<- nrow(data.frame(cc))  # number of species in this site
-
-    
-    bs_params<- bs_params |>
-      set_carrying_capacity(
-        carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
-        timesteps = 31 * 365
-      )  
-    # just for a test set carrying capacity to half of its current value
-
 
     # run simulation for remaining period
     second_phase <- malariasimulation:::run_resumable_simulation(
@@ -281,7 +274,6 @@ run_mnm_model<- function(model_input){
     model<- rbind(first_phase$data, second_phase$data)
     
     }
-  
   
   # add identifying information to output
   model <- model |>
