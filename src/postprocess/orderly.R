@@ -30,14 +30,15 @@ outputs<- bind_rows(new_tools, scaleup, baseline)
 
 
 # quick plot of outputs for 1-year olds
-plot<- outputs |> filter(age == 1, site_name== 'Cascades')
+plot<- outputs |> filter(age == 1)
 
+pdf('bfa_plots.pdf')
 p<- ggplot(data= plot, mapping = aes(x= (month/12) +2000, y= clinical, color= scenario, fill= scenario)) +
   geom_line() +
-  facet_wrap(~site_name, scales = 'free') +
+  #facet_wrap(~site_name, scales = 'free') +
   theme_classic() +
   labs(x= 'Year',
        y= 'Clinical incidence rate in 1-year olds',
-       title= 'Clinical incidence over time by scenario')
+       title= 'Clinical incidence over time by scenario, Cascades, Burkina Faso')
 
 
