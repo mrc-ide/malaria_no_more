@@ -17,7 +17,7 @@ control_model <-malariasimulation::run_simulation(timesteps = params$timesteps,
 
   cc_params<- params |>
     set_carrying_capacity(
-      carrying_capacity = cc *  matrix(c(0.5), ncol = n_vectors),
+      carrying_capacity = matrix(c(0.5), ncol = n_vectors),
       timesteps = (31 + 15)  * 365
     )
 

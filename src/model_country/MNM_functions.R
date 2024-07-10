@@ -56,7 +56,7 @@ n_vectors<- nrow(data.frame(cc))  # number of species in this site
 
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(0.05), ncol = n_vectors),
+    carrying_capacity = matrix(c(1, 1, 0.05), ncol = n_vectors),
     timesteps = (31 + 15)  * 365
   )
   }
