@@ -45,7 +45,7 @@ hipercow::hipercow_configuration()
 
 # then run report:
 test_task2<- hipercow::task_create_expr(orderly2::orderly_run('model_country',
-                      parameters= list(iso3c= 'BFA',
+                      parameters= list(iso3c= 'ETH',
                                        scenario = 'new_tools')),
-                      resources = hipercow::hipercow_resources(cores = 14 ))
+                      resources = hipercow::hipercow_resources(cores = 13 ))
 hipercow::task_log_watch(test_task2)

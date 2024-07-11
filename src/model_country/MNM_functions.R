@@ -54,10 +54,12 @@ parameterise_mnm<- function(site_name,
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
 
+# nrow: carrying capacity at timestep
+# ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(1, 1, 0.05), ncol = n_vectors),
-    timesteps = (31 + 15)  * 365
+    carrying_capacity = matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1,1,  0.81, 0.62, 0.43, 0.24, 0.05), ncol = n_vectors),
+    timesteps = (c(31, 32, 33, 34, 35)+ 15)  * 365
   )
   }
 
