@@ -54,6 +54,10 @@ parameterise_mnm<- function(site_name,
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
 
+if(n_vectors != 3){
+  stop('number of vector species in this site is not equal to 3. Carrying capacity modification will not work,
+       modify site file')
+}
 # nrow: carrying capacity at timestep
 # ncol: species
 params<- params |>
