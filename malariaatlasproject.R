@@ -87,7 +87,6 @@ hipercow_bundle_status(bundle)
 # hipercow_bundle_cancel(bundle)
 
 
-
 # function to read in file
 read_file <- function(year){
   
@@ -141,11 +140,6 @@ summary(dat_complete_clean)
 
 # bind to sf object
 admin1s <- bind_cols(world_1, dat_complete_clean)
-
-
-
-
-
 
 # function to create incidence maps
 plotinc <- function(var){
@@ -237,4 +231,30 @@ output_gif <- magick::image_animate(images, fps = 1)
 
 # save the animated GIF
 image_write(output_gif, paste0(HPCpath, "mortality_animation.gif"))
+
+
+# output data as shapefiles
+# bind to sf object
+dat_admin1 <- bind_cols(world_1, dat_complete)
+
+# function to output shapefile for each variable and year
+var_shp <- function(var){
+    
+  d <- dat_admin1 |>
+    dplyr::select(iso, name_0, name_1, {{var}}) |>
+    mutate(year = str_extract({{var}}, "\\d+"),
+           metric = str_extract({{var}}, "[a-zA-Z]+")) |>
+    rename(value = {{var}}) |>
+    mutate(value = ifelse(is.na(value), 0, value))
+    
+  st_write(d, paste0("./files/MAP admin1 shp/", var, ".shp"), append = FALSE, overwrite = TRUE)
+  
+  print(paste0("Wrote shapefile for ", var))
+  
+}
+
+# run function
+vars <- names(dat_admin1)[which(names(dat_admin1) == "incidence_2000"):which(names(dat_admin1) == "mortality_2022")]
+
+map(vars, var_shp)
 

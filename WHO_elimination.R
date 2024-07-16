@@ -80,9 +80,36 @@ p <- ggplot() +
 # save plot as PNG / PDF 
 ggsave(filename = paste0(HPCpath, "plots/elimination_decades.png"), plot = p, width = 6, height = 8)
 
-# output dataset
 
+# save data as shapefile
+# classify decade based on year of elimination
+dat_all <- GADM_world_0 |> 
+  left_join(WHO_countries, by = c("COUNTRY" = "GADM")) |>
+  left_join(WHO, by = c("COUNTRY" = "country")) |>
+  mutate(decade = ceiling(year / 10) * 10) |>
+  mutate(decade = case_when(decade > 2020 ~ 2024,
+                            is.na(country) ~ NA_real_, # non-WHO countries are listed as NA
+                            decade <= 2020 & !is.na(decade) ~ decade,
+                            is.na(decade) & !is.na(country) ~ 2050)) |> # label endemic countries as 2050
+  dplyr::select(-country, -year_elim, -year_disappear) |>
+  rename(year_e = year)
 
+test <- dat_all |> st_drop_geometry()
 
+# function to output shapefile for each decade
+decade_elim <- function(decadeE){
+  
+  d <- dat_all |>
+       mutate(elim = case_when(decade <= decadeE ~ 1,
+                               decade > decadeE ~ 0,
+                               is.na(decade) ~ -99)) |>
+       dplyr::select(-decade)
+  
+  st_write(d, paste0("./files/WHO elimination shp/WHOeliminate_", decadeE, ".shp"), append = FALSE, overwrite = TRUE)
+  
+  print(paste0("Wrote shapefile for ", decadeE))
+  
+}
 
-
+# run function
+map(c(1960, 1970, 1980, 1990, 2010, 2020, 2024), decade_elim)
