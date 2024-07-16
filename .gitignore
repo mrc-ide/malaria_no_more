@@ -28,3 +28,12 @@ orderly_envir.yml
 draft
 archive
 # ---^^^--- added by orderly ---^^^----------------
+
+# shapefiles
+*.dbf
+*.shp
+*.prj
+*.shx
+
+*.zip
+*.tif
