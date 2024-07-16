@@ -18,14 +18,14 @@ parameterise_mnm<- function(site_name,
   
   run_params<- vimcmalaria::pull_age_groups_time_horizon(quick_run= FALSE)
   
-  # specify vaccine coverage based on forecast  ----------------------------------
+  # specify vaccine coverage based on forecast  --------------------------------
   site<- vimcmalaria::expand_intervention_coverage(site,
                                       terminal_year = 2040)
   
   site<- vimcmalaria::update_coverage_values(site,
                                 iso3c = iso3c,
                                 coverage_data,
-                                scenario_name = 'malaria-r3-r4-default')
+                                scenario_name = 'malaria-r3-r4-bluesky')
   
   if(scenario == 'no-vaccination'){
     
@@ -37,7 +37,7 @@ parameterise_mnm<- function(site_name,
   # check the site has a non-zero EIR
   check_eir(site)
   
-  # pull parameters for this site ------------------------------------------------
+  # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
     demography = site$demography,
@@ -45,30 +45,31 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = run_params$pop_val)
+    overrides = list(human_population = 50000)
   )
   
-  
-  # set up a theoretical transmission-blocking vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
+
   if(scenario == 'new_tools'){
-    
-  bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
-  params$pev_profiles[[1]]$vmax<-  params$pev_profiles[[1]]$vmax + bs_efficacy
-  
-  bs_efficacy_booster<-  (1- params$pev_profiles[[2]]$vmax) *.6
-  params$pev_profiles[[2]]$vmax<-  params$pev_profiles[[2]]$vmax + bs_efficacy
-    
+
+cc <- get_init_carrying_capacity(params)
+n_vectors<- nrow(data.frame(cc))  # number of species in this site
+
+params<- params |>
+  set_carrying_capacity(
+    carrying_capacity = matrix(c(1, 1, 0.05), ncol = n_vectors),
+    timesteps = (31 + 15)  * 365
+  )
   }
+
   
-  
-  # set age groups
+  # # set age groups
   params$clinical_incidence_rendering_min_ages = run_params$min_ages
   params$clinical_incidence_rendering_max_ages = run_params$max_ages
   params$severe_incidence_rendering_min_ages = run_params$min_ages
   params$severe_incidence_rendering_max_ages = run_params$max_ages
   params$age_group_rendering_min_ages = run_params$min_ages
   params$age_group_rendering_max_ages = run_params$max_ages
-  
+
 
   params$pev<- TRUE
   
@@ -103,27 +104,41 @@ analyse_mnm<- function(site,
                             scenario)
   
   
-  model<- vimcmalaria::run_model(model_input)
+  model<- run_mnm_model(model_input)
   
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
   # add identifying columns
   raw_output<- raw_output |>
-    mutate( iso3c = iso3c,
-            site_name = site_name,
-            ur = ur,
-            scenario = scenario)
+    mutate(iso3c = site$iso3c,
+            site_name = site$site_name,
+            ur = site$ur,
+            scenario = site$scenario)
   
   
   output <- postie::get_rates(
     raw_output,
-    time_divisor = 365,
-    baseline_t = 1999,
+    time_divisor = 365/12, # calculate monthly output from model
+    baseline_t = 0,
     age_divisor = 365,
     scaler = 0.215,
     treatment_scaler = 0.517,
   )
+  
+  output<- output |>
+    rename(month = t)
+
+  output <-
+    format_outputs_mnm(
+      output,
+      iso3c = site$iso3c,
+      site_name = site$site_name,
+      ur = site$ur,
+      scenario = site$scenario,
+      description = 'malaria_no_more_runs')
+  
+
   
   return(output)
 }
@@ -135,65 +150,17 @@ analyse_mnm<- function(site,
 #' @param test      boolean-- if true, only run analysis for two test sites. Good for quick tests of code functionality
 #' @returns analysis map to be used as an input for analyse_site
 #' @export
-make_analysis_map<- function(site_df,
-                             site_data,
-                             test){
-  
-  
-  site_data$prevalence<- site_data$prevalence |>
-    dplyr::filter(year == 2019) |>
-    mutate(run_model = ifelse(pfpr > 0.10, TRUE, FALSE))
-  
-  # make exceptions for Madagascar, Ethiopia, and Sudan
-  # hardcode for time's sake but operationalize later
-  if(unique(site_df$country) == 'Madagascar'){
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 == 'Toliary', TRUE, run_model))
-  }
-  
-  if(unique(site_df$country) == 'Ethiopia'){
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 %like% 'Gambela', TRUE, run_model))
-    
-    
-  }
-  
-  if(unique(site_df$country) == 'Sudan'){
-    
-    
-    site_data$prevalence <- site_data$prevalence |>
-      mutate(run_model = ifelse(name_1 == 'South Darfur', TRUE, run_model)) |>
-      mutate(run_model = ifelse(name_1 == 'West Kurdufan', TRUE, run_model))
-    
-  }
-  prevalence<- site_data$prevalence |>
-    select(name_1, urban_rural, iso3c, run_model) |>
-    rename(site_name = name_1,
-           ur= urban_rural)
+make_mnm_analysis_map<- function(site_df,
+                                 test){
   
   site_df<- site_df |>
     rename(site_name = name_1,
            ur= urban_rural)
   
-  site_info<- merge(prevalence, site_df, by = c('site_name', 'ur', 'iso3c'))
   
-  if(nrow(prevalence) < nrow(site_info)){
-    stop('dropped admin units, debug')
-  }
-  
-  if(scenario == 'no-vaccination'){
-    
-    site_info<- site_info |>
-      mutate(run_model = TRUE)
-    
-  }
-  
-  site_info<- site_info |>
-    dplyr::filter(run_model == TRUE)
-  site_info<- site_info |>
-    mutate(scenario = {{scenario}})
+  site_info<- site_df |>
+    mutate(scenario = {{scenario}}) |>
+    mutate(run_model= TRUE)
   
   
   Encoding(site_info$site_name) <- "UTF-8"
@@ -209,7 +176,120 @@ make_analysis_map<- function(site_df,
   return(sites)
 }
 
-
-
+#' format outputs for submission
+#' @param dt  postprocessed output
+#' @param site_name name of site
+#' @param ur urbanicity
+#' @param iso3c country code
+#' @param scenario vaccine scenar.io
+#' @param description reason for model run
+#' @export
+format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
+  dt <- dt |>
+    mutate(
+      disease = 'Malaria',
+      country = iso3c,
+      country_name = countrycode::countrycode(
+        sourcevar = iso3c,
+        origin = 'iso3c',
+        destination = 'country.name'),
+      site_name = site_name,
+      urban_rural = ur,
+      scenario = scenario,
+      description = description,
+    ) |>
+    rename(age = .data$age_lower) |>
+    select(
+      .data$disease,
+      .data$month,
+      .data$age,
+      .data$country,
+      .data$country_name,
+      .data$site_name,
+      .data$urban_rural,
+      .data$scenario,
+      description,
+      .data$clinical,
+      .data$mortality,
+    ) |>
+    mutate(
+      mortality = if_else(is.na(mortality), 0, mortality),
+      clinical = if_else(is.na(clinical), 0, clinical),
+    )
   
+  return(dt)
+}
+
+
+#' Run model for site of interest
+#' @param   model_input      list with input parameters and identifying info
+#' @returns model output
+#' @export
+run_mnm_model<- function(model_input){
+  message('running the model')
+  
+  params <- model_input$param_list
+  params$progress_bar <- TRUE
+  
+  set.seed(56)
+  
+  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination')){
+    model <- retry::retry(
+      malariasimulation::run_simulation(timesteps = params$timesteps,
+                                        parameters = params),
+      max_tries = 5,
+      when = 'error reading from connection|embedded nul|unknown type',
+      interval = 3
+    )
+    
+  }else if(model_input$scenario == 'new_tools'){
+    
+    first_phase <- retry::retry(
+      malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years
+                                        parameters = params),
+      max_tries = 5,
+      when = 'error reading from connection|embedded nul|unknown type',
+      interval = 3
+    )
+    
+    # set up a theoretical blood-stage vaccine (which averted additional 60% of residual cases after pre-erythrocytic vaccine)
+    bs_params<- copy(params)
+    
+    # set efficacy for first 3 doses
+    bs_efficacy<-  (1- params$pev_profiles[[1]]$vmax) *.6
+    bs_params$pev_profiles[[1]]$vmax<-  bs_params$pev_profiles[[1]]$vmax + bs_efficacy
+    
+    # set efficacy for booster dose
+    bs_efficacy_booster<-  (1- bs_params$pev_profiles[[2]]$vmax) *.6
+    bs_params$pev_profiles[[2]]$vmax<-  bs_params$pev_profiles[[2]]$vmax + bs_efficacy
+
+    # run simulation for remaining period
+    second_phase <- malariasimulation:::run_resumable_simulation(
+      timesteps = bs_params$timesteps,
+      bs_params,
+      initial_state=first_phase$state,
+      restore_random_state=TRUE)
+    
+    # bind output from first and second phase together
+    model<- rbind(first_phase$data, second_phase$data)
+    
+    }
+  
+  # add identifying information to output
+  model <- model |>
+    mutate(site_name = model_input$site_name,
+           urban_rural = model_input$ur,
+           iso = model_input$iso3c,
+           description = model_input$description,
+           scenario = model_input$scenario,
+           gfa = model_input$gfa,
+           parameter_draw = model_input$parameter_draw,
+           population = model_input$pop_val,
+           burnin = model_input$burnin)
+  
+  # save model runs somewhere
+  message('saving the model')
+  return(model)
+}
+
   

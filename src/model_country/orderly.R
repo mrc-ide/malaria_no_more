@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'NGA',
-                             scenario = 'test')
+orderly2::orderly_parameters(iso3c = NULL,
+                             scenario = NULL)
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
@@ -19,24 +19,16 @@ library(vimcmalaria)
 
 source('MNM_functions.R')
 # read in dependencies  ----
-coverage_data<- read.csv('routine_r21.csv') |> filter(year <= 2040)
+coverage_data<- read.csv('bluesky_r21.csv') |> filter(year <= 2040)
 site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
 
+if(iso3c == 'UGA'){
+  site_data <- readRDS(paste0('site_files/', iso3c, '.RDS'))
+  
+}
 # make a map of input parameters for site function
 site_df<- remove_zero_eirs(iso3c, site_data)
-
-
-map<- make_analysis_map(site_df, site_data, test = FALSE)
-
-# test parameterisation
-testing<- parameterise_mnm(site_name = 'Lagos',
-                 ur= 'both',
-                 iso3c= 'NGA',
-                 site_data,
-                 coverage_data,
-                 scenario = 'new_tools')
-
-
+map<- make_mnm_analysis_map(site_df, test = FALSE)
 
 # run analysis function for each site + urban/rural combination ----
 cluster_cores <- Sys.getenv("CCP_NUMCPUS")
@@ -47,12 +39,13 @@ if (cluster_cores == "") {
                   site_data= site_data,
                   coverage_data=coverage_data,
                   scenario = {{scenario}})
-} else {
+ } else {
   message(sprintf("running in parallel on %s (on the cluster?)", cluster_cores))
   cl <- parallel::makeCluster(as.integer(cluster_cores))
   invisible(parallel::clusterCall(cl, ".libPaths", .libPaths()))
   parallel::clusterCall(cl, function() {
     message('running')
+    source('MNM_functions.R')
     library(data.table)
     library(dplyr)
     library(scene)
@@ -75,26 +68,7 @@ if (cluster_cores == "") {
 }
 
 # reformat outputs into separate data frames
-test<- reformat_output(output)
-processed_results<- test$processed_full
-raw_output<- test$raw_full
-
-
-# aggregate outputs up to country level
-if(scenario == 'no-vaccination'){
-  
-  dt<- aggregate_outputs(processed_results, pop_single_yr)
-  
-} else{
-  
-  dt<- data.table()
-}
-
-
-#save every output to one list
-outputs<- list('country_output' = dt,
-               'site_output' = output,
-               'raw_output' = raw_output)
+outputs<- rbindlist(output)
 
 
 saveRDS(outputs, 'outputs.rds')
