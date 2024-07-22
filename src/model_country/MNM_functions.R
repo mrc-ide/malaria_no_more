@@ -45,7 +45,7 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = 50000)
+    overrides = list(human_population = 5000)
   )
   
 
@@ -101,7 +101,6 @@ analyse_mnm<- function(site,
                        coverage_data,
                        scenario){
   
-  
   model_input<- parameterise_mnm(site_name = site$site_name,
                             ur = site$ur, 
                             iso3c = site$iso3c,
@@ -115,6 +114,14 @@ analyse_mnm<- function(site,
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
+  pop<- site_data$population |>
+    filter(name_1 == site_name,
+           urban_rural == ur) |>
+    select(year, pop)
+  
+  pop$t <- 1:nrow(pop)
+  
+  
   # add identifying columns
   raw_output<- raw_output |>
     mutate(iso3c = site$iso3c,
@@ -122,8 +129,7 @@ analyse_mnm<- function(site,
             ur = site$ur,
             scenario = site$scenario)
   
-  
-  output <- postie::get_rates(
+  monthly_output <- postie::get_rates(
     raw_output,
     time_divisor = 365/12, # calculate monthly output from model
     baseline_t = 0,
@@ -132,21 +138,44 @@ analyse_mnm<- function(site,
     treatment_scaler = 0.517,
   )
   
-  output<- output |>
-    rename(month = t)
-
-  output <-
+  monthly_output <-
     format_outputs_mnm(
-      output,
+      monthly_output,
       iso3c = site$iso3c,
       site_name = site$site_name,
       ur = site$ur,
       scenario = site$scenario,
       description = 'malaria_no_more_runs')
   
-
+  annual_output <- postie::get_rates(
+    raw_output,
+    time_divisor = 365, # calculate annual output from model
+    baseline_t = 1999,
+    age_divisor = 365,
+    scaler = 0.215,
+    treatment_scaler = 0.517,
+  )
+  annual_output <-
+    format_outputs_mnm(
+      annual_output,
+      iso3c = site$iso3c,
+      site_name = site$site_name,
+      ur = site$ur,
+      scenario = site$scenario,
+      description = 'malaria_no_more_runs')
   
-  return(output)
+  annual_output<- annual_output |>
+    rename(year = t)
+  
+  # merge on population
+  annual_output<- merge(annual_output, pop, by = 'year')
+  
+  monthly_output<- merge(monthly_output, pop, by = 't')
+  monthly_output<- monthly_output |>
+    rename(month = t)
+  
+  
+  return(list('monthly' = monthly_output, 'annual' = annual_output))
 }
 
 
@@ -207,7 +236,7 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
     rename(age = .data$age_lower) |>
     select(
       .data$disease,
-      .data$month,
+      .data$t,
       .data$age,
       .data$country,
       .data$country_name,
