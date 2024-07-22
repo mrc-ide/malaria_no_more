@@ -1,5 +1,5 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL)
+orderly2::orderly_parameters(iso3c = 'NGA')
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
