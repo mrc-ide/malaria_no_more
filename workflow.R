@@ -59,10 +59,9 @@ submit_country<- function(iso, scen, report_name){
     
   } else if (report_name == 'postprocess'){
     
-   # hipercow::task_create_expr(
-      orderly2::orderly_run('postprocess',
-                                                     parameters = list(iso3c = iso))
-    #)
+   hipercow::task_create_expr(
+      orderly2::orderly_run('postprocess', parameters = list(iso3c = iso))
+    )
   }
 }
 

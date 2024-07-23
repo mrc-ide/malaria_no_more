@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'BFA',
-                             scenario = 'new_tools')
+orderly2::orderly_parameters(iso3c = NULL,
+                             scenario = NULL)
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
@@ -28,7 +28,7 @@ if(iso3c == 'UGA'){
 }
 # make a map of input parameters for site function
 site_df<- remove_zero_eirs(iso3c, site_data)
-map<- make_mnm_analysis_map(site_df, test = TRUE)
+map<- make_mnm_analysis_map(site_df, test = FALSE)
 
 # run analysis function for each site + urban/rural combination ----
 cluster_cores <- Sys.getenv("CCP_NUMCPUS")
