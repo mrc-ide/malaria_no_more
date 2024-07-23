@@ -45,7 +45,7 @@ parameterise_mnm<- function(site_name,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
     burnin = run_params$burnin,
-    overrides = list(human_population = 5000)
+    overrides = list(human_population = 50000)
   )
   
 
@@ -115,8 +115,8 @@ analyse_mnm<- function(site,
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
   pop<- site_data$population |>
-    filter(name_1 == site_name,
-           urban_rural == ur) |>
+    filter(name_1 == site$site_name,
+           urban_rural == site$ur) |>
     select(year, pop)
   
   pop$t <- 1:nrow(pop)
@@ -325,6 +325,33 @@ run_mnm_model<- function(model_input){
   # save model runs somewhere
   message('saving the model')
   return(model)
+}
+
+
+
+#' format output from analyse_site
+#' @param output  model output
+#' @export
+reformat_output<- function(output){
+  
+  annual_results<- data.table()
+  monthly_results<- data.table()
+  
+  for(item in c(1:length(output))){
+    
+    subset<- output[[item]]
+    
+    annual<- subset$annual
+    monthly<- subset$monthly
+    
+    annual_results<- rbind(annual, annual_results, fill =T)
+    monthly_results<- dplyr::bind_rows(monthly, monthly_results)
+    
+  }
+  
+  return(list('annual' = annual_results,
+              'monthly' = monthly_results))
+  
 }
 
   
