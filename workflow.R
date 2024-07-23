@@ -1,5 +1,4 @@
 # workflow for malaria no more runs --------------------------------------------
-
 # if needed install packages
 # remotes::install_github('mrc-ide/orderly2')
 # remotes::install_github('mrc-ide/postie@dalys')
@@ -16,8 +15,7 @@ library(vimcmalaria)
 
 
 # initialise orderly2 repository if you have not already
-#orderly2::orderly_init()
-
+# orderly2::orderly_init()
 # scenarios to run:
 # no-vaccination: coverage of other interventions remain constant from 2022 through 2040, no vaccines
 # new_tools: addition of a blood-stage vaccine (IE RH5). In the absence of trial efficacy data, operationalized 
@@ -60,11 +58,9 @@ submit_country<- function(iso, scen, descrip, report_name){
       )
     
   } else if (report_name == 'postprocess'){
-    
-   hipercow::task_create_expr(
+
       orderly2::orderly_run('postprocess', parameters = list(iso3c = iso,
                                                              description= descrip))
-    )
   }
 }
 
@@ -78,7 +74,7 @@ lapply(
 )
 
 # run postprocessing
-lapply(iso3cs,
+lapply(iso3cs[14:31],
        submit_country,
        report_name = 'postprocess',
        scen = NULL,
@@ -97,8 +93,8 @@ compile_mnm_outputs<- function(){
   completed<- vimcmalaria::completed_reports('model_country')
   completed<- completed |>
     dplyr::arrange(desc(date_time)) |>
-    dplyr::distinct(iso3c, scenario, .keep_all = TRUE) |>
-    dplyr::arrange(iso3c, scenario)
+    dplyr::distinct(iso3c, scenario, description, .keep_all = TRUE) |>
+    dplyr::arrange(iso3c, scenario, description)
   
   pull_output<- function(index, map){
     
