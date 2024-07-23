@@ -1,15 +1,13 @@
 # workflow for malaria no more runs --------------------------------------------
 
 # if needed install packages
-remotes::install_github('mrc-ide/orderly2')
-remotes::install_github('mrc-ide/postie@dalys')
-remotes::install_github('mrc-ide/scene')
-remotes::install_github('mrc-ide/site@vimc')
-remotes::install_github('mrc-ide/vimcmalaria')
-remotes::install_github('mrc-ide/malariasimulation@dev')
-
-
-install.packages('countrycode')
+# remotes::install_github('mrc-ide/orderly2')
+# remotes::install_github('mrc-ide/postie@dalys')
+# remotes::install_github('mrc-ide/scene')
+# remotes::install_github('mrc-ide/site@vimc')
+# remotes::install_github('mrc-ide/vimcmalaria')
+# remotes::install_github('mrc-ide/malariasimulation@dev')
+# install.packages('countrycode')
 
 # load packages
 library(orderly2)
@@ -41,37 +39,53 @@ hipercow::hipercow_configuration()
 coverage<- read.csv('src/model_country/bluesky_r21.csv')
 iso3cs<- unique(coverage$country_code)
 
-submit_country<- function(iso, scen, report_name){
+submit_country<- function(iso, scen, descrip, report_name){
   
   site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
   core<- nrow(site_data$sites)
   
   if(core> 32){
+    
     core<- 32
   }
   
   if(report_name == 'model_country'){
     
-    hipercow::task_create_expr(orderly2::orderly_run('model_country',
-                                                     parameters= list(iso3c= iso,
-                                                                      scenario = scen)),
-                               resources = hipercow::hipercow_resources(cores = core))
+    hipercow::task_create_expr(
+      orderly2::orderly_run('model_country',
+                             parameters= list(iso3c= iso,
+                                              scenario = scen,
+                                              description = descrip)),
+                             resources = hipercow::hipercow_resources(cores = core)
+      )
     
   } else if (report_name == 'postprocess'){
     
    hipercow::task_create_expr(
-      orderly2::orderly_run('postprocess', parameters = list(iso3c = iso))
+      orderly2::orderly_run('postprocess', parameters = list(iso3c = iso,
+                                                             description= descrip))
     )
   }
 }
 
 # run model country
-lapply('AGO', submit_country, report_name = 'model_country', scen = 'new_tools')
+lapply(
+  iso3cs,
+  submit_country,
+  report_name = 'model_country',
+  scen = 'new_tools',
+  descrip = 'added_prop_n'
+)
 
 # run postprocessing
-lapply(iso3cs[2:31], submit_country, report_name = 'postprocess', scen = NULL)
+lapply(iso3cs,
+       submit_country,
+       report_name = 'postprocess',
+       scen = NULL,
+       descrip = 'added_prop_n')
 
-
+# pull report metadata
+reports<- vimcmalaria::completed_reports('model_country')
 
 # pull model outputs into large file to save
 

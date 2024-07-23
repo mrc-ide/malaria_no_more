@@ -168,12 +168,10 @@ analyse_mnm<- function(site,
     rename(year = t)
   
   # merge on population
-  annual_output<- merge(annual_output, pop, by = 'year')
-  
+  annual_output<- merge(annual_output, pop, by = 'year') 
   monthly_output<- merge(monthly_output, pop, by = 't')
   monthly_output<- monthly_output |>
     rename(month = t)
-  
   
   return(list('monthly' = monthly_output, 'annual' = annual_output))
 }
@@ -238,6 +236,7 @@ format_outputs_mnm<- function(dt, iso3c, site_name, ur, scenario,  description){
       .data$disease,
       .data$t,
       .data$age,
+      .data$prop_n,
       .data$country,
       .data$country_name,
       .data$site_name,
