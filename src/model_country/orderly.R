@@ -67,5 +67,7 @@ if (cluster_cores == "") {
   parallel::stopCluster(cl)
 }
 
+# reformat list outputs into large data frame
+outputs<- reformat_output(output)
 
-saveRDS(output, 'outputs.rds')
+saveRDS(outputs, 'outputs.rds')
