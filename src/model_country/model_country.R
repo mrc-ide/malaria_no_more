@@ -1,6 +1,7 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             scenario = NULL)
+orderly2::orderly_parameters(iso3c = 'BEN',
+                             scenario = 'new_tools',
+                             description = 'testing')
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')

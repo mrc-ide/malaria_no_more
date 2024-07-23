@@ -1,5 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'NGA')
+orderly2::orderly_parameters(iso3c = 'BEN',
+                             description = NULL)
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -19,16 +20,17 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
                              parameter:scenario == environment:new_tools)", c(new_tools.rds = "outputs.rds"))
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:scaleup)", c(scaleup.rds = "outputs.rds"))
-orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                             parameter:scenario == environment:baseline)", c(baseline.rds = "outputs.rds"))
+# orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
+#                              parameter:scenario == environment:baseline)", c(baseline.rds = "outputs.rds"))
 
 
 new_tools<- readRDS('new_tools.rds')
 scaleup<- readRDS('scaleup.rds')
-baseline<- readRDS('baseline.rds')
+#baseline<- readRDS('baseline.rds')
 
 
-outputs<- bind_rows(new_tools, scaleup, baseline)
+annual<- bind_rows(new_tools$annual, scaleup$annual)
+monthly<- bind_rows(new_tools$monthly, scaleup$monthly)
 
 
 # quick plot of outputs for 1-year olds
