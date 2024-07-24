@@ -74,7 +74,7 @@ lapply(
 )
 
 # run postprocessing
-lapply(iso3cs[14:31],
+lapply(iso3cs,
        submit_country,
        report_name = 'postprocess',
        scen = NULL,
@@ -90,11 +90,12 @@ reports<- vimcmalaria::completed_reports('model_country')
 #' @export
 compile_mnm_outputs<- function(){
   
-  completed<- vimcmalaria::completed_reports('model_country')
+  completed<- vimcmalaria::completed_reports('postprocess')
   completed<- completed |>
     dplyr::arrange(desc(date_time)) |>
-    dplyr::distinct(iso3c, scenario, description, .keep_all = TRUE) |>
-    dplyr::arrange(iso3c, scenario, description)
+    dplyr::distinct(iso3c, description, .keep_all = TRUE) |>
+    dplyr::arrange(iso3c, description)
+  
   
   pull_output<- function(index, map){
     
@@ -102,7 +103,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/model_country/', directory_name, '/outputs.rds'))
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds'))
     return(output)
   }
   
