@@ -15,7 +15,7 @@ library(vimcmalaria)
 
 
 # initialise orderly2 repository if you have not already
-# orderly2::orderly_init()
+#orderly2::orderly_init()
 # scenarios to run:
 # no-vaccination: coverage of other interventions remain constant from 2022 through 2040, no vaccines
 # new_tools: addition of a blood-stage vaccine (IE RH5). In the absence of trial efficacy data, operationalized 
@@ -66,11 +66,11 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  iso3cs,
+  'TZA',
   submit_country,
   report_name = 'model_country',
   scen = 'new_tools',
-  descrip = 'added_prop_n'
+  descrip = 'full_run'
 )
 
 # run postprocessing

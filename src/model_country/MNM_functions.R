@@ -37,6 +37,22 @@ parameterise_mnm<- function(site_name,
   # check the site has a non-zero EIR
   check_eir(site)
   
+    #reorder such that gambiae is the last observation in vectors spreadsheet
+if(nrow(site$vectors[species == 'gambiae']) ==1){
+
+  gamb<- site$vectors |> filter(species == 'gambiae')
+  vex<- site$vectors |> filter(species != 'gambiae')
+
+  vex<- rbind(vex, gamb)
+  
+  site$vectors<- vex
+
+  # pull the observation value for gambiae
+obs_val<- site$vectors |> with(which(species == 'gambiae', arr.ind = TRUE))
+  
+}
+
+  
   # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
@@ -54,17 +70,18 @@ parameterise_mnm<- function(site_name,
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
 
-if(n_vectors != 3){
-  stop('number of vector species in this site is not equal to 3. Carrying capacity modification will not work,
-       modify site file')
-}
+if(!is.na(cc["gambiae"])){
+
 # nrow: carrying capacity at timestep
 # ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1,1,  0.81, 0.62, 0.43, 0.24, 0.05), ncol = n_vectors),
+    carrying_capacity = matrix(c(rep(1, times= 5*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05), ncol = n_vectors),
     timesteps = (c(31, 32, 33, 34, 35)+ 15)  * 365
   )
+
+}
+
   }
 
   
