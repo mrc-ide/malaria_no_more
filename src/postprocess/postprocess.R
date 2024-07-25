@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             description = NULL)
+orderly2::orderly_parameters(iso3c = 'AGO',
+                             description = 'full_run')
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -12,9 +12,9 @@ library(ggplot2)
 library(dplyr)
 library(ggpubr)
 library(ggforce)
+
 new_tools<- 'new_tools'
 scaleup<- 'vaccine_scaleup'
-baseline<- 'no-vaccination'
 
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:new_tools &&
@@ -22,63 +22,82 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:scaleup &&
                              parameter:description == this:description)", c(scaleup.rds = "outputs.rds"))
-
-# orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-#                              parameter:scenario == environment:baseline)", c(baseline.rds = "outputs.rds"))
-
+                            
 
 new_tools<- readRDS('new_tools.rds')
 scaleup<- readRDS('scaleup.rds')
-#baseline<- readRDS('baseline.rds')
 
 
 annual<- bind_rows(new_tools$annual, scaleup$annual)
 monthly<- bind_rows(new_tools$monthly, scaleup$monthly)
 
-annual<- annual |>
+annual_agg <- annual |>
   group_by(site_name, urban_rural, scenario, year) |>
-  mutate(cases = clinical * prop_n * pop,
-         deaths = mortality * prop_n * pop) |>
-  summarise(cases = sum(cases),
-            deaths = sum(deaths),
-            pop = sum(pop),
-            .groups = 'keep') |>
-  mutate(clinical = cases/pop,
-         mortality = deaths/ pop)
+  mutate(
+    cases = clinical * prop_n * pop,
+    deaths = mortality * prop_n * pop
+  ) |>
+  summarise(
+    cases = sum(cases),
+    deaths = sum(deaths),
+    pop = mean(pop), # population is the same regardless of age group so will retain true value
+    .groups = "keep"
+  ) |>
+  mutate(
+    clinical = cases / pop,
+    mortality = deaths / pop
+  ) |>
+  filter(site_name != TRUE)
 
-monthly<- monthly |>
-  group_by(site_name, urban_rural, scenario, year) |>
-  mutate(cases = clinical * prop_n * pop,
-         deaths = mortality * prop_n * pop) |>
-  summarise(cases = sum(cases),
-            deaths = sum(deaths),
-            pop = sum(pop),
-            .groups = 'keep') |>
-  mutate(clinical = cases/pop,
-         mortality = deaths/pop)
 
-saveRDS(annual, 'annual_output.rds')
-saveRDS(monthly, 'monthly_output.rds')
+
+monthly_agg <- monthly |>
+  group_by(site_name, urban_rural, scenario, month) |>
+  mutate(
+    cases = clinical * prop_n * pop,
+    deaths = mortality * prop_n * pop
+  ) |>
+  summarise(
+    cases = sum(cases),
+    deaths = sum(deaths),
+    pop = mean(pop), # population is the same regardless of age group so will retain true value
+    .groups = "keep"
+  ) |>
+  mutate(
+    clinical = cases / pop,
+    mortality = deaths / pop
+  ) |>
+  filter(site_name != TRUE)
+
+
+saveRDS(annual_agg, 'annual_output.rds')
+saveRDS(monthly_agg, 'monthly_output.rds')
 
 # quick plot of outputs for 1-year olds
 # pdf('ben_plots.pdf')
-# 
-# for (site in unique(annual$site_name)){
-#   
+  
 #   message(site)
-#   plot<- annual |> filter(year >= 2000 & site_name == site)
-#   p<- ggplot(data= plot, mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
+
+#   p<- ggplot(data= annual_agg, mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
 #     geom_line(lwd= 0.5) +
-#     #facet_wrap_paginate(~site_name, scales = 'free', ncol = 2, nrow = 2, page = 1) +
+#     facet_wrap(~site_name) +
 #     theme_classic() +
 #     labs(x= 'Year',
-#          y= 'Clinical incidence rate in 1-year olds',
-#          title= 'Clinical incidence over time by scenario, Burkina Faso',
-#          subtitle = site)
-#   
-#   
-#   
+#          y= 'Clinical incidence, all-age',
+#          title= 'All-age clinical incidence over time by scenario',
+#          subtitle = iso3c)
+  
+#     p<- ggplot(data= monthly_agg, mapping = aes(x= month, y= clinical, color= scenario, fill= scenario)) +
+#     geom_line(lwd= 0.5) +
+#     facet_wrap(~site_name) +
+#     theme_classic() +
+#     labs(x= 'Year',
+#          y= 'Clinical incidence, all-age',
+#          title= 'All-age clinical incidence over time by scenario',
+#          subtitle = iso3c)
+  
+  
 #   print(p)
-#   
-# }
+  
+
 # dev.off()
