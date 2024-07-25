@@ -1,18 +1,23 @@
 # workflow for malaria no more runs --------------------------------------------
 # if needed install packages
-# remotes::install_github('mrc-ide/orderly2')
-# remotes::install_github('mrc-ide/postie@dalys')
-# remotes::install_github('mrc-ide/scene')
-# remotes::install_github('mrc-ide/site@vimc')
-# remotes::install_github('mrc-ide/vimcmalaria')
-# remotes::install_github('mrc-ide/malariasimulation@dev')
-# install.packages('countrycode')
+#install.packages('remotes')
+#remotes::install_github('mrc-ide/orderly2')
+#remotes::install_github('mrc-ide/postie@dalys')
+#remotes::install_github('mrc-ide/scene')
+#remotes::install_github('mrc-ide/site@vimc')
+#remotes::install_github('mrc-ide/malariasimulation@dev')
+#remotes::install_github('mrc-ide/vimcmalaria')
+
 
 # load packages
 library(orderly2)
 library(malariasimulation)
 library(vimcmalaria)
-
+library(hipercow)
+library(dplyr)
+library(data.table)
+library(postie)
+library(scene)
 
 # initialise orderly2 repository if you have not already
 #orderly2::orderly_init()
@@ -66,7 +71,7 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  'TZA',
+  iso3cs,
   submit_country,
   report_name = 'model_country',
   scen = 'new_tools',

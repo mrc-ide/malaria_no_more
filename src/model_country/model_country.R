@@ -1,11 +1,10 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'AGO',
-                             scenario = 'new_tools',
-                             description = 'full_run')
+orderly2::orderly_parameters(iso3c = NULL,
+                             scenario = NULL,
+                             description = NULL)
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
 orderly2::orderly_artefact('Model output', 'outputs.rds')
-
 # packages and functions ----
 library(site)
 library(data.table)
@@ -46,7 +45,7 @@ if (cluster_cores == "") {
   invisible(parallel::clusterCall(cl, ".libPaths", .libPaths()))
   parallel::clusterCall(cl, function() {
     message('running')
-    source('MNM_functions.R')
+    library(site)
     library(data.table)
     library(dplyr)
     library(scene)
@@ -55,10 +54,14 @@ if (cluster_cores == "") {
     library(tibble)
     library(postie)
     library(countrycode)
-    library(site)
     library(vimcmalaria)
+
+    source('MNM_functions.R')
+
+
     TRUE
   })
+
   output<- parallel::clusterApply(cl,
                                   map,
                                   analyse_mnm,

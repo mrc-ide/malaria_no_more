@@ -46,10 +46,6 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   vex<- rbind(vex, gamb)
   
   site$vectors<- vex
-
-  # pull the observation value for gambiae
-obs_val<- site$vectors |> with(which(species == 'gambiae', arr.ind = TRUE))
-  
 }
 
   
@@ -70,7 +66,7 @@ obs_val<- site$vectors |> with(which(species == 'gambiae', arr.ind = TRUE))
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
 
-if(!is.na(cc["gambiae"])){
+if(is.na(cc["gambiae"]) == FALSE){
 
 # nrow: carrying capacity at timestep
 # ncol: species
