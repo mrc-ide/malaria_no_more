@@ -131,8 +131,22 @@ analyse_mnm<- function(site,
     filter(name_1 == site$site_name,
            urban_rural == site$ur) |>
     select(year, pop)
-  
-  pop$t <- 1:nrow(pop)
+
+
+  #expand pop into monthly
+monthly_pop <- data.table()
+pop <- data.table(pop)
+
+for (i in unique(pop$year)) {
+  year_dt <- data.table()
+  for (month in 1:12) {
+    year_dt <- rbind(year_dt, pop[year == i, .(year, month, pop)])
+  }
+  monthly_pop <- rbind(monthly_pop, year_dt, fill = T)
+}
+monthly_pop[, month := 1:.N]
+monthly_pop<- monthly_pop |>
+  select(-year)
   
   
   # add identifying columns
@@ -179,12 +193,12 @@ analyse_mnm<- function(site,
   
   annual_output<- annual_output |>
     rename(year = t)
-  
-  # merge on population
-  annual_output<- merge(annual_output, pop, by = 'year') 
-  monthly_output<- merge(monthly_output, pop, by = 't')
   monthly_output<- monthly_output |>
     rename(month = t)
+  # merge on population
+  annual_output<- merge(annual_output, pop, by = 'year') 
+  monthly_output<- merge(monthly_output, monthly_pop, by = 'month')
+
   
   return(list('monthly' = monthly_output, 'annual' = annual_output))
 }

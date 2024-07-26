@@ -27,7 +27,6 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
 new_tools<- readRDS('new_tools.rds')
 scaleup<- readRDS('scaleup.rds')
 
-
 annual<- bind_rows(new_tools$annual, scaleup$annual)
 monthly<- bind_rows(new_tools$monthly, scaleup$monthly)
 

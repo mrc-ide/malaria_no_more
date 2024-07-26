@@ -71,19 +71,19 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  iso3cs,
+  '',
   submit_country,
   report_name = 'model_country',
   scen = 'new_tools',
-  descrip = 'full_run'
+  descrip = 'fixed_monthly_output'
 )
 
 # run postprocessing
-lapply(iso3cs,
+lapply(iso3cs[31:31],
        submit_country,
        report_name = 'postprocess',
        scen = NULL,
-       descrip = 'added_prop_n')
+       descrip = 'fixed_monthly_output')
 
 # pull report metadata
 reports<- vimcmalaria::completed_reports('model_country')
@@ -102,7 +102,7 @@ compile_mnm_outputs<- function(){
     dplyr::arrange(iso3c, description)
   
   
-  pull_output<- function(index, map){
+  pull_annual_output<- function(index, map){
     
     message(index)
     map<- map[ index,]
@@ -111,9 +111,28 @@ compile_mnm_outputs<- function(){
     output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds'))
     return(output)
   }
-  
-  outputs<- rbindlist(lapply(c(1:nrow(completed)), pull_output, map = completed))
+  pull_month_output<- function(index, map){
+    
+    message(index)
+    map<- map[ index,]
+    directory_name<- map$directory_name
+    iso3c<- map$iso3c
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds'))
+    return(output)
+  }
+
+
+  outputs_annual<- rbindlist(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
+  outputs_monthly<- rbindlist(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
+
+  outputs<- list('annual' = outputs_annual, 'monthly' = outputs_monthly)
+
+  return(outputs)
 }
 
 # pull all of the outputs
 outputs<- compile_mnm_outputs()
+
+
+saveRDS(outputs$annual, 'annual.rds')
+saveRDS(outputs$monthly, 'monthly.rds')
