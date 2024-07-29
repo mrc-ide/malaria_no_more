@@ -37,6 +37,46 @@ parameterise_mnm<- function(site_name,
   # check the site has a non-zero EIR
   check_eir(site)
   
+  if(site$country %in% c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA')){
+    
+    # make blank vector sheet
+    vectrow <-  tibble(species = c("arabiensis", "funestus", "gambiae"),
+                       prop = c(0, 0, 0),
+                       blood_meal_rates = c(0.333, 0.333, 0.333),
+                       foraging_time = c(0.69, 0.69, 0.69),
+                       Q0 = c(0.71, 0.94, 0.92),
+                       phi_bednets = c(0.8, 0.78, 0.85),
+                       phi_indoors = c(0.86, 0.87, 0.9),
+                       mum = c(0.132, 0.112, 0.132))
+    
+    arabiensis <- vectrow[1,]
+    funestus <- vectrow[2,]
+    gambiae <- vectrow[3,]
+    
+    # check that vector table lists all three species
+    if(!("arabiensis" %in% c(site$vectors$species))){
+      add_row <- slice_tail(site$vectors, n = 1)
+      add_row[, 5:12] <- arabiensis
+      site$vectors <- bind_rows(site$vectors, add_row)
+    }
+    
+    if(!("funestus" %in% c(site$vectors$species))){
+      add_row <- slice_tail(site$vectors, n = 1)
+      add_row[, 5:12] <- funestus
+      site$vectors <- bind_rows(site$vectors, add_row)
+    }
+    
+    if(!("gambiae" %in% c(site$vectors$species))){
+      add_row <- slice_tail(site$vectors, n = 1)
+      add_row[, 5:12] <- gambiae
+      site$vectors <- bind_rows(site$vectors, add_row)
+    }
+    
+    site$vectors <- site$vectors |> arrange(species)
+    
+  }
+  
+  
     #reorder such that gambiae is the last observation in vectors spreadsheet
 if(nrow(site$vectors[species == 'gambiae']) ==1){
 
@@ -332,7 +372,7 @@ run_mnm_model<- function(model_input){
       restore_random_state=TRUE)
     
     # bind output from first and second phase together
-    model<- rbind(first_phase$data, second_phase$data)
+    model<- dplyr::bind_rows(first_phase$data, second_phase$data)
     
     }
   
@@ -370,7 +410,7 @@ reformat_output<- function(output){
     annual<- subset$annual
     monthly<- subset$monthly
     
-    annual_results<- rbind(annual, annual_results, fill =T)
+    annual_results<- dplyr::bind_rows(annual, annual_results) #  fill =T
     monthly_results<- dplyr::bind_rows(monthly, monthly_results)
     
   }

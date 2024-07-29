@@ -71,22 +71,51 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  '',
+  c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA'), # iso3cs
   submit_country,
   report_name = 'model_country',
   scen = 'new_tools',
   descrip = 'fixed_monthly_output'
 )
 
+lapply(
+  c('UGA'), # iso3cs
+  submit_country,
+  report_name = 'model_country',
+  scen = 'vaccine_scaleup',
+  descrip = 'fixed_monthly_output'
+)
+
+lapply(
+  c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA'),
+  submit_country,
+  report_name = 'postprocess',
+  scen = 'new_tools',
+  descrip = 'fixed_monthly_output'
+)
+
+lapply(
+  iso3cs,
+  submit_country,
+  report_name = 'postprocess',
+  scen = 'new_tools',
+  descrip = 'fixed_monthly_output'
+)
+
+iso3cs <- unique(coverage$country_code)
+reports <- vimcmalaria::completed_reports('model_country')
+problem <- reports |> filter(description == "fixed_monthly_output") |> group_by(iso3c, scenario) |> summarize(n = n()) |>
+  group_by(iso3c) |> summarize(n = n()) |> filter(n < 2) |> select(iso3c) |> as.vector() |> unlist()
+
 # run postprocessing
-lapply(iso3cs[31:31],
+lapply(c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA'),
        submit_country,
        report_name = 'postprocess',
        scen = NULL,
        descrip = 'fixed_monthly_output')
 
 # pull report metadata
-reports<- vimcmalaria::completed_reports('model_country')
+reports <- vimcmalaria::completed_reports('model_country')
 
 # pull model outputs into large file to save
 
@@ -108,7 +137,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds'))
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) # J:/malaria_no_more/archive/postprocess/
     return(output)
   }
   pull_month_output<- function(index, map){
@@ -117,13 +146,13 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds'))
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) # J:/malaria_no_more/archive/postprocess/
     return(output)
   }
 
 
   outputs_annual<- rbindlist(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
-  outputs_monthly<- rbindlist(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
+  outputs_monthly<- rbindlist(lapply(c(1:nrow(completed)), pull_month_output, map = completed))
 
   outputs<- list('annual' = outputs_annual, 'monthly' = outputs_monthly)
 
@@ -134,5 +163,9 @@ compile_mnm_outputs<- function(){
 outputs<- compile_mnm_outputs()
 
 
-saveRDS(outputs$annual, 'annual.rds')
-saveRDS(outputs$monthly, 'monthly.rds')
+write.csv(outputs$annual, 'outputs/annual_LH.csv')
+write.csv(outputs$monthly, 'outputs/monthly_LH.csv')
+
+saveRDS(outputs$annual, 'outputs/annual_LH.rds')
+saveRDS(outputs$monthly, 'outputs/monthly_LH.rds')
+

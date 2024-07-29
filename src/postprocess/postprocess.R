@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'AGO',
-                             description = 'full_run')
+orderly2::orderly_parameters(iso3c = NULL,
+                             description = NULL)
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -31,7 +31,7 @@ annual<- bind_rows(new_tools$annual, scaleup$annual)
 monthly<- bind_rows(new_tools$monthly, scaleup$monthly)
 
 annual_agg <- annual |>
-  group_by(site_name, urban_rural, scenario, year) |>
+  group_by(country, country_name, site_name, urban_rural, scenario, year) |>
   mutate(
     cases = clinical * prop_n * pop,
     deaths = mortality * prop_n * pop
@@ -51,7 +51,7 @@ annual_agg <- annual |>
 
 
 monthly_agg <- monthly |>
-  group_by(site_name, urban_rural, scenario, month) |>
+  group_by(country, country_name, site_name, urban_rural, scenario, month) |>
   mutate(
     cases = clinical * prop_n * pop,
     deaths = mortality * prop_n * pop
