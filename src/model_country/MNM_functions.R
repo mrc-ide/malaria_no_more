@@ -22,6 +22,8 @@ parameterise_mnm<- function(site_name,
   site<- vimcmalaria::expand_intervention_coverage(site,
                                       terminal_year = 2040)
   
+  
+  # to follow vimc coverage levels
   site<- vimcmalaria::update_coverage_values(site,
                                 iso3c = iso3c,
                                 coverage_data,
