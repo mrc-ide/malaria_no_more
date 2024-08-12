@@ -43,6 +43,10 @@ hipercow::hipercow_configuration()
 coverage<- read.csv('src/model_country/bluesky_r21.csv')
 iso3cs<- unique(coverage$country_code)
 
+#see what reports from the worst case scenario have compeleted ( a few are still running on the cluster)
+reports<- completed_reports('model_country') |> filter(scenario == 'worst_case')
+iso3cs_done<- unique(reports$iso3c) # will need to run remainder when all jobs complete
+
 submit_country<- function(iso, scen, descrip, report_name){
   
   site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
@@ -72,24 +76,16 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  iso3cs,
+  'UGA',
   submit_country,
   report_name = 'model_country',
   scen = 'worst_case',
   descrip = 'set_coverage_at_80'
 )
 
-lapply(
-  iso3cs, 
-  submit_country,
-  report_name = 'model_country',
-  scen = 'vaccine_scaleup',
-  descrip = 'set_coverage_at_80'
-)
-
 # run postprocessing
 lapply(
-  iso3cs,
+  iso3cs_done,
   submit_country,
   report_name = 'postprocess',
   scen = NULL, # 'new_tools', 'vaccine_scaleup'
@@ -106,11 +102,7 @@ problem <- reports |> filter(description == 'set_coverage_at_80') |> group_by(is
 # pull report metadata
 reports <- vimcmalaria::completed_reports('model_country')
 
-# pull model outputs into large file to save
 
-#' Pull final outputs from workflow
-#' @param descrip         description of runs to pull
-#' @export
 compile_mnm_outputs<- function(){
   
   completed<- vimcmalaria::completed_reports('postprocess') |>
@@ -127,7 +119,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) # J:/malaria_no_more/archive/postprocess/
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) # J:/malaria_no_more/archive/postprocess/
     return(output)
   }
   pull_month_output<- function(index, map){
@@ -136,13 +128,13 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) # J:/malaria_no_more/archive/postprocess/
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) # J:/malaria_no_more/archive/postprocess/
     return(output)
   }
 
 
-  outputs_annual<- rbindlist(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
-  outputs_monthly<- rbindlist(lapply(c(1:nrow(completed)), pull_month_output, map = completed))
+  outputs_annual<- bind_rows(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
+  outputs_monthly<- bind_rows(lapply(c(1:nrow(completed)), pull_month_output, map = completed))
 
   outputs<- list('annual' = outputs_annual, 'monthly' = outputs_monthly)
 
@@ -153,9 +145,28 @@ compile_mnm_outputs<- function(){
 outputs<- compile_mnm_outputs()
 
 
-write.csv(outputs$annual, 'outputs/annual_80.csv')
-write.csv(outputs$monthly, 'outputs/monthly_80.csv')
+write.csv(outputs$annual, 'outputs/annual_80_with_worst_case.csv')
+write.csv(outputs$monthly, 'outputs/monthly_80_with_worst_case.csv')
 
-saveRDS(outputs$annual, 'outputs/annual_80.rds')
-saveRDS(outputs$monthly, 'outputs/monthly.rds')
 
+
+pdf('plots/comparative_incidence_plots.pdf', width = 12, height= 10)
+for(iso3c in unique(outputs$annual$country)){
+
+  message(iso3c)
+  annual<- outputs$annual |> filter(country == iso3c)
+
+    p<- ggplot(data= annual, mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
+    geom_line(lwd= 0.5) +
+    facet_wrap(~site_name , scales= 'free') +
+    theme_classic() +
+    labs(x= 'Year',
+         y= 'Clinical incidence per thousand, all-age',
+         title= 'All-age clinical incidence over time by scenario',
+         subtitle = iso3c)
+  
+  print(p)
+
+}
+
+dev.off()

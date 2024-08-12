@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             description = NULL)
+orderly2::orderly_parameters(iso3c = 'ETH',
+                             description = 'recalibrate_ethiopia')
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -15,7 +15,6 @@ library(ggforce)
 
 new_tools<- 'new_tools'
 scaleup<- 'vaccine_scaleup'
-worst_case<- 'worst_case'
 
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:new_tools &&
@@ -23,17 +22,37 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:scaleup &&
                              parameter:description == this:description)", c(scaleup.rds = "outputs.rds"))
+                            
+descrip<- 'set_coverage_at_80'
+
+
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                             parameter:scenario == environment:worst_case &&
-                             parameter:description == this:description)", c(worst_case.rds = "outputs.rds"))
-                           
+  parameter:scenario == environment:new_tools &&
+  parameter:description == environment:descrip)", c(old_new_tools.rds = "outputs.rds"))
+orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
+  parameter:scenario == environment:scaleup &&
+  parameter:description == environment:descrip)", c(old_scaleup.rds = "outputs.rds"))
+
 
 new_tools<- readRDS('new_tools.rds')
 scaleup<- readRDS('scaleup.rds')
-worst_case<- readRDS('worst_case.rds')
 
-annual<- bind_rows(new_tools$annual, scaleup$annual, worst_case$annual)
-monthly<- bind_rows(new_tools$monthly, scaleup$monthly, worst_case$monthly)
+old_new_tools<- readRDS('old_new_tools.rds')
+olds_scaleup<- readRDS('old_scaleup.rds')
+
+annual<- bind_rows(new_tools$annual, scaleup$annual)
+monthly<- bind_rows(new_tools$monthly, scaleup$monthly)
+
+annual_old<- bind_rows(old_new_tools$annual, olds_scaleup$annual)
+annual_old<- annual_old |>
+  mutate(description = 'older_run')
+monthly_old<- bind_rows(olds_scaleup$monthly, old_new_tools$monthly)
+monthly_old<- monthly_old |>
+  mutate(description = 'older_run')
+
+annual<-bind_rows(annual, annual_old)
+monthly<- bind_rows(monthly, monthly_old)
+
 
 annual_agg <- annual |>
   group_by(country, country_name, site_name, urban_rural, scenario, year, description) |>
@@ -81,17 +100,28 @@ saveRDS(monthly_agg, 'monthly_output.rds')
 # pdf('ben_plots.pdf')
   
 #   message(site)
-# annual_agg<- data.table(annual_agg)
-#   p<- ggplot(data= annual_agg, mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
-#     geom_line(lwd= 0.5) +
-#     facet_wrap(~site_name , scales= 'free') +
-#     theme_classic() +
-#     labs(x= 'Year',
-#          y= 'Clinical incidence per thousand, all-age',
-#          title= 'All-age clinical incidence over time by scenario',
-#          subtitle = iso3c)
+annual_agg<- data.table(annual_agg)
+  p<- ggplot(data= annual_agg[description == 'malaria_no_more_runs'], mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
+    geom_line(lwd= 0.5) +
+    facet_wrap(~site_name + description, scales= 'free') +
+    theme_classic() +
+    labs(x= 'Year',
+         y= 'Clinical incidence per thousand, all-age',
+         title= 'All-age clinical incidence over time by scenario',
+         subtitle = iso3c)
 
+p2 <- ggplot(data = annual_agg[description == "older_run"], mapping = aes(x = year, y = clinical * 1000, color = scenario, fill = scenario)) +
+  geom_line(lwd = 0.5) +
+  facet_wrap(~ site_name + description, scales = "free") +
+  theme_classic() +
+  labs(
+    x = "Year",
+    y = "Clinical incidence per thousand, all-age",
+    title = "All-age clinical incidence over time by scenario",
+    subtitle = iso3c
+  )
 
+  
 #     p<- ggplot(data= monthly_agg, mapping = aes(x= month, y= clinical, color= scenario, fill= scenario)) +
 #     geom_line(lwd= 0.5) +
 #     facet_wrap(~site_name) +
