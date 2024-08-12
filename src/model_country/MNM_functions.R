@@ -361,7 +361,7 @@ run_mnm_model<- function(model_input){
   
   set.seed(56)
   
-  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination')){
+  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination', 'worst_case')){
     model <- retry::retry(
       malariasimulation::run_simulation(timesteps = params$timesteps,
                                         parameters = params),
