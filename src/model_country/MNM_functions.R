@@ -29,7 +29,7 @@ parameterise_mnm<- function(site_name,
                                 coverage_data,
                                 scenario_name = 'malaria-r3-r4-bluesky')
   
-  if(scenario == 'no-vaccination'){
+  if(scenario == 'no-vaccination' | scenario == 'worst_case'){
     
     site$interventions$r21_booster_coverage<- 0
     site$interventions$r21_coverage<- 0
@@ -90,7 +90,21 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   site$vectors<- vex
 }
 
-  
+  if(scenario == 'worst_case'){ # test a case where all interventions are set to zero after 2022
+
+test <- site$interventions[year > 2022, `:=`(
+  irs_cov = 0,
+  itn_input_dist = 0,
+  itn_use = 0,
+  smc_cov = 0,
+  tx_cov = 0,
+  rtss_cov = 0,
+  pmc_cov = 0
+)]
+
+    
+    
+  }
   # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
