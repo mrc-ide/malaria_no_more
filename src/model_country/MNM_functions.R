@@ -132,6 +132,17 @@ params<- params |>
   params$age_group_rendering_max_ages = run_params$max_ages
 
 
+  if(iso3c == 'ETH'){
+
+    cali_eir<- readRDS(paste0('J:/VIMC_malaria/analyses/ethiopia/calibrations/calibrated_site', site_name, '.rds' ))
+    cali_EIR<- cali_eir$eir_info$EIR
+
+    message(paste0('calibrating to EIR of ', cali_EIR))
+    params<- set_equilibrium(params, init_EIR = cali_EIR)
+
+
+  }
+
   params$pev<- TRUE
   
   inputs <- list(

@@ -27,7 +27,7 @@ library(scene)
 #            such that the blood-stage vaccine has 60% efficacy against  residual cases not protected by R21
 # vaccine_scaleup: identical to routine scaleup of R21 vaccine for GAVI runs, with coverage varying by country
 
-scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup')
+scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
 
 
 # to run workflow:
@@ -71,11 +71,11 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  iso3cs,
+  'ETH',
   submit_country,
   report_name = 'model_country',
-  scen = 'new_tools',
-  descrip = 'set_coverage_at_80'
+  scen = 'vaccine_scaleup',
+  descrip = 'recalibrate_ethiopia'
 )
 
 lapply(
