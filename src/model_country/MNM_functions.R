@@ -148,7 +148,8 @@ params<- params |>
 
   if(site_name == 'Oromia'){
 
-    cali_params<- readRDS('J:/malaria_no_more/calibrated_site_Oromia.rds')
+    cali_params<- readRDS('J:/malaria_no_more/ethiopia/calibrated_site_Oromia_2020.rds')
+    params<- set_equilibrium(params, init_EIR = cali_params$init_EIR)
 
     params<- cali_params
 

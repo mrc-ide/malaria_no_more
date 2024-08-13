@@ -76,11 +76,11 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  'UGA',
+  'ETH',
   submit_country,
   report_name = 'model_country',
   scen = 'worst_case',
-  descrip = 'set_coverage_at_80'
+  descrip = 'calibrate_oromia_2010'
 )
 
 # run postprocessing

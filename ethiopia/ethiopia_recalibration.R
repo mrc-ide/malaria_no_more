@@ -34,7 +34,7 @@ model_input <- parameterise_mnm(
     message('calibrating')
     x<- data.table(x)
     # Calculate the PfPR2-10:
-    prev_2_10 <- mean(x[timestep %in% c((18*365):(19*365))]$n_detect_pcr_730_3649/x[timestep %in% c((18*365):(19* 365))]$n_730_3649) # average over a year 
+    prev_2_10 <- mean(x[timestep %in% c((10*365):(11*365))]$n_detect_pcr_730_3649/x[timestep %in% c((10*365):(11* 365))]$n_730_3649) # average over a year 
     
     # Return the calculated PfPR2-10:
     return(prev_2_10)
@@ -42,7 +42,7 @@ model_input <- parameterise_mnm(
   
 
   # pull target pfpr from 2010 for corresponding site
-  target_pfpr <- site_data$prevalence |> filter(year == 2019, name_1 == site) |> pull(pfpr)
+  target_pfpr <- site_data$prevalence |> filter(year == 2011, name_1 == site) |> pull(pfpr)
   
   print(paste0('target pfpr ', target_pfpr ))
   
@@ -55,7 +55,7 @@ model_input <- parameterise_mnm(
   
   # Set upper and lower EIR bounds for the calibrate function to check
   lower_EIR <- 0.01
-  upper_EIR <- 10
+  upper_EIR <- 60
   
   #output<- run_simulation(timesteps = simparams$timesteps, parameters = simparams)
   # Run the calibrate() function:
@@ -66,16 +66,7 @@ model_input <- parameterise_mnm(
                         low = lower_EIR, high = upper_EIR)
   
   print(paste0('calibrated EIR for site ', site, ' :', cali_EIR))
-  simparams<- set_equilibrium(simparams, init_EIR = cali_EIR)
-  saveRDS(simparams, paste0('calibrated_site_', site, '_2020.rds'))
-  return(simparams)
+
+  return(cali_EIR)
 }
 
-
-recalibrate('Oromia')
-
-calibrated<- readRDS('calibrated_site_Oromia.rds')
-
-calibrated$init_EIR
-
-site
