@@ -104,21 +104,21 @@ saveRDS(monthly_agg, 'monthly_output.rds')
 annual_agg<- data.table(annual_agg)
   p<- ggplot(data= annual_agg[description == 'malaria_no_more_runs'], mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
     geom_line(lwd= 0.5) +
-    facet_wrap(~site_name + description, scales= 'free') +
+    facet_wrap(~site_name , scales= 'free') +
     theme_classic() +
     labs(x= 'Year',
          y= 'Clinical incidence per thousand, all-age',
-         title= 'All-age clinical incidence over time by scenario',
+         title= 'All-age clinical incidence over time by scenario, calibrated',
          subtitle = iso3c)
 
 p2 <- ggplot(data = annual_agg[description == "older_run"], mapping = aes(x = year, y = clinical * 1000, color = scenario, fill = scenario)) +
   geom_line(lwd = 0.5) +
-  facet_wrap(~ site_name + description, scales = "free") +
+  facet_wrap(~ site_name, scales = "free") +
   theme_classic() +
   labs(
     x = "Year",
     y = "Clinical incidence per thousand, all-age",
-    title = "All-age clinical incidence over time by scenario",
+    title = "All-age clinical incidence over time by scenario, pre-calibration",
     subtitle = iso3c
   )
 

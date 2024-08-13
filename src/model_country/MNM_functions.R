@@ -128,8 +128,8 @@ if(is.na(cc["gambiae"]) == FALSE){
 # ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(rep(1, times= 5*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05), ncol = n_vectors),
-    timesteps = (c(31, 32, 33, 34, 35)+ 15)  * 365
+    carrying_capacity = matrix(c(rep(1, times= 10*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05), ncol = n_vectors),
+    timesteps = (c(31, 32, 33, 34, 35, 36, 37, 38, 39, 40)+ 15)  * 365
   )
 
 }

@@ -41,15 +41,26 @@ hipercow::hipercow_configuration()
 
 # first set home directory to repository directory
 coverage<- read.csv('src/model_country/bluesky_r21.csv')
-iso3cs<- unique(coverage$country_code)
+vimc_iso3cs<- unique(coverage$country_code)
+
+
+extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
 
 #see what reports from the worst case scenario have compeleted ( a few are still running on the cluster)
 reports<- completed_reports('model_country') |> filter(scenario == 'worst_case')
 iso3cs_done<- unique(reports$iso3c) # will need to run remainder when all jobs complete
 
 submit_country<- function(iso, scen, descrip, report_name){
-  
-  site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
+  if (iso %in% vimc_iso3cs){
+
+    site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
+
+  } else if (iso %in% extra_iso3cs){
+
+    site_data <- readRDS(paste0('src/model_country/original_site_files/', iso, '.RDS'))
+
+
+  }
   core<- nrow(site_data$sites)
   
   if(core> 32){
@@ -75,12 +86,13 @@ submit_country<- function(iso, scen, descrip, report_name){
 }
 
 # run model country
+
 lapply(
-  'ETH',
+  extra_iso3cs,
   submit_country,
   report_name = 'model_country',
-  scen = 'worst_case',
-  descrip = 'calibrate_oromia_2010'
+  scen = 'new_tools',
+  descrip = 'set_coverage_at_80'
 )
 
 # run postprocessing
@@ -119,7 +131,10 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) # J:/malaria_no_more/archive/postprocess/
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
+    # M:/Lydia/malaria_no_more/archive/postprocess/
+    # J:/malaria_no_more/archive/postprocess/
+    
     return(output)
   }
   pull_month_output<- function(index, map){
@@ -128,7 +143,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) # J:/malaria_no_more/archive/postprocess/
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
 
@@ -147,6 +162,9 @@ outputs<- compile_mnm_outputs()
 
 write.csv(outputs$annual, 'outputs/annual_80_with_worst_case.csv')
 write.csv(outputs$monthly, 'outputs/monthly_80_with_worst_case.csv')
+
+saveRDS(outputs$annual, 'outputs/annual_80_with_worst_case.rds')
+saveRDS(outputs$monthly, 'outputs/monthly_80_with_worst_case.rds')
 
 
 
