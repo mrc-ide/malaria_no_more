@@ -48,7 +48,7 @@ model_input <- parameterise_mnm(
   
   # Add a parameter to the parameter list specifying the number of timesteps 
   simparams<- model_input$param_list
-  simparams$timesteps <- 20 * 365
+  simparams$timesteps <- 12 * 365
   
   # Establish a tolerance value:
   pfpr_tolerance <- 0.01
