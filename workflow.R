@@ -90,11 +90,11 @@ submit_country<- function(iso, scen, descrip, report_name){
 # run model country
 
 lapply(
-  c('COD', 'CMR'),
+  'ETH',
   submit_country,
   report_name = 'model_country',
-  scen = 'new_tools',
-  descrip = 'carrying_capacity_scalers'
+  scen = 'worst_case',
+  descrip = 'eir_10'
 )
 
 

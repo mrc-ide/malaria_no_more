@@ -134,7 +134,7 @@ if(is.na(cc["gambiae"]) == FALSE){
 # ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(rep(1, times= 10*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05), ncol = n_vectors),
+    carrying_capacity_scalers = matrix(c(rep(1, times= 10*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05), ncol = n_vectors),
     timesteps = (c(31, 32, 33, 34, 35, 36, 37, 38, 39, 40)+ 15)  * 365
   )
 
@@ -154,7 +154,7 @@ params<- params |>
 
   if(site_name == 'Oromia'){
 
-    params<- set_equilibrium(params, init_EIR = 20)
+    params<- set_equilibrium(params, init_EIR = 10)
 
 
 
