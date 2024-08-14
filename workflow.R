@@ -50,6 +50,8 @@ extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
 reports<- completed_reports('model_country') |> filter(scenario == 'worst_case')
 iso3cs_done<- unique(reports$iso3c) # will need to run remainder when all jobs complete
 
+
+
 submit_country<- function(iso, scen, descrip, report_name){
   if (iso %in% vimc_iso3cs){
 
@@ -88,12 +90,13 @@ submit_country<- function(iso, scen, descrip, report_name){
 # run model country
 
 lapply(
-  extra_iso3cs,
+  c('COD', 'CMR'),
   submit_country,
   report_name = 'model_country',
   scen = 'new_tools',
-  descrip = 'set_coverage_at_80'
+  descrip = 'carrying_capacity_scalers'
 )
+
 
 # run postprocessing
 lapply(
@@ -131,7 +134,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
+    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
     # M:/Lydia/malaria_no_more/archive/postprocess/
     # J:/malaria_no_more/archive/postprocess/
     
@@ -143,7 +146,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
+    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
 

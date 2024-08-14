@@ -35,11 +35,17 @@ parameterise_mnm<- function(site_name,
     site$interventions$r21_coverage<- 0
   }
   
+  # scale treatment up to 80%  from 2022-2034
+site$interventions <- site$interventions |>
+  mutate(tx_cov = ifelse(year %in% c(2022:2034), NA, tx_cov)) |>
+  mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
+  scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
+
   
   # check the site has a non-zero EIR
   check_eir(site)
   
-  if(site$country %in% c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA')){
+  if(site$country %in% c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA', 'GNQ')){
     
     # make blank vector sheet
     vectrow <-  tibble(species = c("arabiensis", "funestus", "gambiae"),
@@ -102,7 +108,7 @@ test <- site$interventions[year > 2022, `:=`(
   pmc_cov = 0
 )]
 
-    
+    site$interventions<- test
     
   }
   # pull parameters for this site ----------------------------------------------
@@ -148,10 +154,8 @@ params<- params |>
 
   if(site_name == 'Oromia'){
 
-    cali_params<- readRDS('J:/malaria_no_more/ethiopia/calibrated_site_Oromia_2020.rds')
-    params<- set_equilibrium(params, init_EIR = cali_params$init_EIR)
+    params<- set_equilibrium(params, init_EIR = 20)
 
-    params<- cali_params
 
 
   }

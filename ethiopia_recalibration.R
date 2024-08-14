@@ -16,7 +16,6 @@ coverage_data<- read.csv('J:/malaria_no_more/src/model_country/coverage_80.csv')
 site_data$interventions$irs_cov = 0
 
 # write recalibration function for each site of ethiopia
-
 recalibrate<- function(site){
 
 model_input <- parameterise_mnm(
@@ -31,7 +30,9 @@ model_input <- parameterise_mnm(
     message('calibrating')
     x<- data.table(x)
     # Calculate the PfPR2-10:
-    prev_2_10 <- mean(x[timestep %in% c((10*365):(11*365))]$n_detect_pcr_730_3649/x[timestep %in% c((10*365):(11* 365))]$n_730_3649) # average over a year 
+
+
+    prev_2_10 <- mean(x[timestep %in% c((11*365):(12*365))]$n_detect_pcr_730_3649/x[timestep %in% c((11*365):(12* 365))]$n_730_3649) # average over a year 
     
     # Return the calculated PfPR2-10:
     return(prev_2_10)
@@ -39,24 +40,23 @@ model_input <- parameterise_mnm(
   
 
   # pull target pfpr from 2010 for corresponding site
-  target_pfpr <- site_data$prevalence |> filter(year == 2010, name_1 == site) |> pull(pfpr)
+  target_pfpr <- site_data$prevalence |> filter(year == 2011, name_1 == site) |> pull(pfpr)
   
   print(paste0('target pfpr ', target_pfpr ))
   
   # Add a parameter to the parameter list specifying the number of timesteps 
   simparams<- model_input$param_list
-  simparams$timesteps <- 12 * 365
+  simparams$timesteps <- 15 * 365
   
   # Establish a tolerance value:
   pfpr_tolerance <- 0.01
   
   # Set upper and lower EIR bounds for the calibrate function to check
-  lower_EIR <- 0.01
-  upper_EIR <- 5
+  lower_EIR <- 0.2
+  upper_EIR <- 1
   
-  output<- run_simulation(timesteps = simparams$timesteps, parameters = simparams)
   # Run the calibrate() function:
-  cali_EIR <- cali::scalibrate(target = target_pfpr,
+  cali_EIR <- cali::calibrate(target = target_pfpr,
                         summary_function = summary_mean_pfpr_2_10,
                         parameters = simparams,
                         tolerance = pfpr_tolerance, 
@@ -71,4 +71,20 @@ model_input <- parameterise_mnm(
 
 
 
+simparams$progress_bar<- TRUE
+output_calibrated<- run_simulation(timesteps = simparams$timesteps, parameters = simparams)
 
+
+
+ggplot(data= output_calibrated, mapping = aes(x= timestep/365 + 2000, y= (n_detect_pcr_730_3649/ n_730_3649)))+
+geom_point() +
+  geom_line(data= site_pfpr, mapping = aes(x= year, y= pfpr), color= 'blue')
+
+
+
+
+  # pull target pfpr from 2010 for corresponding site
+  site_pfpr <- site_data$prevalence |> filter(name_1 == site) 
+  
+  ggplot(data= site_pfpr, mapping = aes(x= year, y= pfpr))+
+    geom_line(data= site_pfpr, mapping = aes(x= year, y= pfpr), color= 'blue')
