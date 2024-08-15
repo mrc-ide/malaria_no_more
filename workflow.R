@@ -35,7 +35,7 @@ scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
 # this will error out unless you have saved coverage and site file inputs in your src/model-country directory--
 # contact Lydia for filepaths
 hipercow::hipercow_init(driver = 'windows')
-hipercow::hipercow_provision()
+#hipercow::hipercow_provision()
 hipercow::hipercow_environment_create(sources = 'src/model_country/MNM_functions.R')
 hipercow::hipercow_configuration()
 
@@ -88,29 +88,28 @@ submit_country<- function(iso, scen, descrip, report_name){
 }
 
 # run model country
-
 lapply(
-  c(vimc_iso3cs, extra_iso3cs),
+  c('ETH'),
   submit_country,
   report_name = 'model_country',
-  scen = 'new_tools',
+  scen = 'vaccine_scaleup',
   descrip = 'scale_tx_cov'
 )
 
 
 # run postprocessing
 lapply(
-  c(vimc_iso3cs[2:31]),
+  c("ZWE"), # vimc_iso3cs[2:31], iso3cs_done
   submit_country,
   report_name = 'postprocess',
-  scen = NULL, # 'new_tools', 'vaccine_scaleup'
+  scen = "new_tools", # 'new_tools', 'vaccine_scaleup'
   descrip = 'scale_tx_cov'
 )
 
 # identify any jobs which failed to run 
 iso3cs <- unique(coverage$country_code)
 reports <- vimcmalaria::completed_reports('model_country')
-problem <- reports |> filter(description == 'set_coverage_at_80') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
+problem <- reports |> filter(description == 'scale_tx_cov') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
   group_by(iso3c) |> summarize(n = n()) |> filter(n < 2) |> select(iso3c) |> as.vector() |> unlist()
 
 
@@ -121,7 +120,7 @@ reports <- vimcmalaria::completed_reports('model_country')
 compile_mnm_outputs<- function(){
   
   completed<- vimcmalaria::completed_reports('postprocess') |>
-    filter(description == 'set_coverage_at_80')
+    filter(description == 'scale_tx_cov')
   completed<- completed |>
     dplyr::arrange(desc(date_time)) |>
     dplyr::distinct(iso3c, description, .keep_all = TRUE) |>
@@ -134,7 +133,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
     # M:/Lydia/malaria_no_more/archive/postprocess/
     # J:/malaria_no_more/archive/postprocess/
     
@@ -146,7 +145,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
 
@@ -163,15 +162,15 @@ compile_mnm_outputs<- function(){
 outputs<- compile_mnm_outputs()
 
 
-write.csv(outputs$annual, 'outputs/annual_80_with_worst_case.csv')
-write.csv(outputs$monthly, 'outputs/monthly_80_with_worst_case.csv')
+write.csv(outputs$annual, 'outputs/scale_tx_cov_annual.csv')
+write.csv(outputs$monthly, 'outputs/scale_tx_cov_monthly.csv')
 
-saveRDS(outputs$annual, 'outputs/annual_80_with_worst_case.rds')
-saveRDS(outputs$monthly, 'outputs/monthly_80_with_worst_case.rds')
+saveRDS(outputs$annual, 'outputs/scale_tx_cov_annual.rds')
+saveRDS(outputs$monthly, 'outputs/scale_tx_cov_monthly.rds')
 
 
 
-pdf('plots/comparative_incidence_plots.pdf', width = 12, height= 10)
+pdf('plots/comparative_incidence_plots_scale_tx_cov.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)
