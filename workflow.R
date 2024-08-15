@@ -90,21 +90,21 @@ submit_country<- function(iso, scen, descrip, report_name){
 # run model country
 
 lapply(
-  'ETH',
+  c(vimc_iso3cs, extra_iso3cs),
   submit_country,
   report_name = 'model_country',
-  scen = 'worst_case',
-  descrip = 'eir_10'
+  scen = 'new_tools',
+  descrip = 'scale_tx_cov'
 )
 
 
 # run postprocessing
 lapply(
-  iso3cs_done,
+  c(vimc_iso3cs[2:31]),
   submit_country,
   report_name = 'postprocess',
   scen = NULL, # 'new_tools', 'vaccine_scaleup'
-  descrip = 'set_coverage_at_80'
+  descrip = 'scale_tx_cov'
 )
 
 # identify any jobs which failed to run 

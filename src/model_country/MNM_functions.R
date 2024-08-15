@@ -98,19 +98,14 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
 
   if(scenario == 'worst_case'){ # test a case where all interventions are set to zero after 2022
 
-test <- site$interventions[year > 2022, `:=`(
-  irs_cov = 0,
-  itn_input_dist = 0,
-  itn_use = 0,
-  smc_cov = 0,
-  tx_cov = 0,
-  rtss_cov = 0,
-  pmc_cov = 0
-)]
+  test <- data.table(site$interventions)
 
-    site$interventions<- test
+  test[year > 2022, `:=`( irs_cov = 0, itn_input_dist = 0, itn_use = 0, smc_cov = 0, tx_cov = 0, rtss_cov = 0, pmc_cov = 0)]
+
+  site$interventions<- test
     
   }
+
   # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
