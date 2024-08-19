@@ -92,10 +92,10 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  c('GAB', 'GNQ'), #  c(vimc_iso3cs, extra_iso3cs)
+  c('AGO', 'COD', 'COG', 'GAB'), #  c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'model_country',
-  scen = 'worst_case', # c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
+  scen = 'new_tools', # c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
@@ -110,20 +110,23 @@ lapply(
 )
 
 # FAILING
-# worse_case: AGO, COD, COG, UGA, GNQ, GAB, SEN
-# vaccine_scaleup: AGO, COD, COG, UGA, GNQ, GAB, SEN
-# new_tools: AGO, COD, COG, UGA, GNQ, GAB, SEN
+# new_tools: AGO, COD, COG, GAB
+
+# resolved bugs:
+# some sites have more than 3 vector species (COD, GAB)-- reverted carrying code back to version that was flexible wrt/ number of vector species
+# relic postprocessing bug from last week's testing (code errored out removing a "year" column that no longer exists when transforming popluation into monthly values)
 
 
-task_log_show("bb63eaa250f313e25d5084b478b2d326") # GAB new tools
-# Gabon is a country with more than 3 species-- change carrying capacity code to old version 
-# that is flecible towards species number
-task_log_show("1552060a6d9be0dfc8958710a32cda8e") # uganda vaccine scaelup
-task_log_show("7e92d6fa54481df029d35b1ef9f58cf7") #uganda new tools
-task_log_show("6c55144ae8aa670eb5aaeeb1e110e8eb") #uganda worst case
+task_log_show("a9890ced02f2509022c105fcbe03440f") 
+task_log_show("9fd0590eefef43cee133f8980d18ed01") 
+task_log_show("2c9fd671987724f06af3f0512c31790b") 
+task_log_show("fd8330deb482af2bbf530e50ead33d15") 
 
-# AGO and COD, COG worst case now running
-# AGO COG, vaccine_scaleup now running
+# remaining problem reports:
+# AGO new tools
+# COD new tools - species bug
+# COG new tools
+# GAB new tools-- species bug
 
 # identify any jobs which failed to run
 iso3cs <- unique(coverage$country_code)
