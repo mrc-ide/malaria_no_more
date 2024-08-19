@@ -42,8 +42,6 @@ hipercow::hipercow_configuration()
 # first set home directory to repository directory
 coverage<- read.csv('src/model_country/bluesky_r21.csv')
 vimc_iso3cs<- unique(coverage$country_code)
-
-
 extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
 
 #see what reports from the worst case scenario have compeleted ( a few are still running on the cluster)
@@ -62,7 +60,12 @@ submit_country<- function(iso, scen, descrip, report_name){
     site_data <- readRDS(paste0('src/model_country/original_site_files/', iso, '.RDS'))
 
 
+  }  
+  
+  if (iso == 'UGA'){
+    site_data <- readRDS(paste0('src/model_country/original_site_files/', iso, '.RDS'))
   }
+
   core<- nrow(site_data$sites)
   
   if(core> 32){
@@ -89,28 +92,44 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  c('ETH'),
+  c('GAB', 'GNQ'), #  c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'model_country',
-  scen = 'vaccine_scaleup',
-  descrip = 'scale_tx_cov'
+  scen = 'worst_case', # c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
+  descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
 
 # run postprocessing
 lapply(
-  c("ZWE"), # vimc_iso3cs[2:31], iso3cs_done
+  c(vimc_iso3cs, extra_iso3cs),
   submit_country,
   report_name = 'postprocess',
-  scen = "new_tools", # 'new_tools', 'vaccine_scaleup'
-  descrip = 'scale_tx_cov'
+  scen = "worst_case", # 'new_tools', 'vaccine_scaleup', 'worst_case'
+  descrip = 'gene_drive_fix'
 )
 
-# identify any jobs which failed to run 
+# FAILING
+# worse_case: AGO, COD, COG, UGA, GNQ, GAB, SEN
+# vaccine_scaleup: AGO, COD, COG, UGA, GNQ, GAB, SEN
+# new_tools: AGO, COD, COG, UGA, GNQ, GAB, SEN
+
+
+task_log_show("bb63eaa250f313e25d5084b478b2d326") # GAB new tools
+# Gabon is a country with more than 3 species-- change carrying capacity code to old version 
+# that is flecible towards species number
+task_log_show("1552060a6d9be0dfc8958710a32cda8e") # uganda vaccine scaelup
+task_log_show("7e92d6fa54481df029d35b1ef9f58cf7") #uganda new tools
+task_log_show("6c55144ae8aa670eb5aaeeb1e110e8eb") #uganda worst case
+
+# AGO and COD, COG worst case now running
+# AGO COG, vaccine_scaleup now running
+
+# identify any jobs which failed to run
 iso3cs <- unique(coverage$country_code)
 reports <- vimcmalaria::completed_reports('model_country')
-problem <- reports |> filter(description == 'scale_tx_cov') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
-  group_by(iso3c) |> summarize(n = n()) |> filter(n < 2) |> select(iso3c) |> as.vector() |> unlist()
+problem <- reports |> filter(description == 'gene_drive_fix') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
+  group_by(iso3c) |> summarize(n = n()) |> filter(n < 3) |> select(iso3c) |> as.vector() |> unlist()
 
 
 # pull report metadata

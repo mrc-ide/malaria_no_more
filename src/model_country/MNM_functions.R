@@ -129,20 +129,11 @@ if(is.na(cc["gambiae"]) == FALSE){
 # ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity_scalers = matrix(c(1, 1, 0.89,
-      1, 1, 0.79,
-      1, 1, 0.68,
-      1, 1, 0.58, 
-      1, 1, 0.47,
-      1, 1, 0.37,
-      1, 1, 0.26,
-      1, 1, 0.16,
-      1, 1, 0.05), ncol = 3, byrow = TRUE)),
-    timesteps = (c(31, 32, 33, 34, 35, 36, 37, 38, 39, 40)+ 15)  * 365
+    carrying_capacity_scalers = matrix(c(rep(1, times= 9*(n_vectors -1)), 0.89, 0.79, 0.68, 0.58, 0.47, 0.37, 0.26, 0.16, 0.05), ncol= n_vectors),
+    timesteps = (c(32, 33, 34, 35, 36, 37, 38, 39, 40)+ 15)  * 365
   )
 
 }
-
   }
 
   
@@ -165,6 +156,7 @@ params<- params |>
 
   params$pev<- TRUE
   
+
   inputs <- list(
     'param_list' = params,
     'site_name' = site_name,
@@ -218,9 +210,7 @@ for (i in unique(pop$year)) {
   monthly_pop <- rbind(monthly_pop, year_dt, fill = T)
 }
 monthly_pop[, month := 1:.N]
-monthly_pop<- monthly_pop |>
-  select(-year)
-  
+
   
   # add identifying columns
   raw_output<- raw_output |>
