@@ -116,18 +116,6 @@ lapply(
 # some sites have more than 3 vector species (COD, GAB)-- reverted carrying code back to version that was flexible wrt/ number of vector species
 # relic postprocessing bug from last week's testing (code errored out removing a "year" column that no longer exists when transforming popluation into monthly values)
 
-
-task_log_show("a9890ced02f2509022c105fcbe03440f") 
-task_log_show("9fd0590eefef43cee133f8980d18ed01") 
-task_log_show("2c9fd671987724f06af3f0512c31790b") 
-task_log_show("fd8330deb482af2bbf530e50ead33d15") 
-
-# remaining problem reports:
-# AGO new tools
-# COD new tools - species bug
-# COG new tools
-# GAB new tools-- species bug
-
 # identify any jobs which failed to run
 iso3cs <- unique(coverage$country_code)
 reports <- vimcmalaria::completed_reports('model_country')
@@ -142,7 +130,7 @@ reports <- vimcmalaria::completed_reports('model_country')
 compile_mnm_outputs<- function(){
   
   completed<- vimcmalaria::completed_reports('postprocess') |>
-    filter(description == 'scale_tx_cov')
+    filter(description == 'gene_drive_fix')
   completed<- completed |>
     dplyr::arrange(desc(date_time)) |>
     dplyr::distinct(iso3c, description, .keep_all = TRUE) |>
@@ -184,15 +172,15 @@ compile_mnm_outputs<- function(){
 outputs<- compile_mnm_outputs()
 
 
-write.csv(outputs$annual, 'outputs/scale_tx_cov_annual.csv')
-write.csv(outputs$monthly, 'outputs/scale_tx_cov_monthly.csv')
+write.csv(outputs$annual, 'outputs/gene_drive_fix_annual.csv')
+write.csv(outputs$monthly, 'outputs/gene_drive_fix_monthly.csv')
 
-saveRDS(outputs$annual, 'outputs/scale_tx_cov_annual.rds')
-saveRDS(outputs$monthly, 'outputs/scale_tx_cov_monthly.rds')
+saveRDS(outputs$annual, 'outputs/gene_drive_fix_annual.rds')
+saveRDS(outputs$monthly, 'outputs/gene_drive_fix_monthly.rds')
 
 
 
-pdf('plots/comparative_incidence_plots_scale_tx_cov.pdf', width = 12, height= 10)
+pdf('plots/comparative_incidence_plots_gene_drive_fix.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)
