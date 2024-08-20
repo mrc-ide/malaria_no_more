@@ -92,25 +92,22 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  c('AGO', 'COD', 'COG', 'GAB'), #  c(vimc_iso3cs, extra_iso3cs)
+  c('GAB'), #  c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'model_country',
-  scen = 'new_tools', # c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
+  scen = 'vaccine_scaleup', # c('new_tools', 'vaccine_scaleup', 'worst_case')
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
 
 # run postprocessing
 lapply(
-  c(vimc_iso3cs, extra_iso3cs),
+  c("COG"), # c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'postprocess',
-  scen = "worst_case", # 'new_tools', 'vaccine_scaleup', 'worst_case'
+  scen = NULL, # 'new_tools', 'vaccine_scaleup', 'worst_case'
   descrip = 'gene_drive_fix'
 )
-
-# FAILING
-# new_tools: AGO, COD, COG, GAB
 
 # resolved bugs:
 # some sites have more than 3 vector species (COD, GAB)-- reverted carrying code back to version that was flexible wrt/ number of vector species

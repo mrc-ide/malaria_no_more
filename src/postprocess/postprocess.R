@@ -1,5 +1,5 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'ERI',
+orderly2::orderly_parameters(iso3c = 'GAB',
                              description = 'gene_drive_fix')
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
@@ -109,15 +109,15 @@ saveRDS(monthly_agg, 'monthly_output.rds')
 # pdf('ben_plots.pdf')
 
 #   message(site)
-annual_agg<- data.table(annual_agg)
-  p<- ggplot(data= annual_agg[site_name == 'Gash Barka'], mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
-    geom_line(lwd= 0.5) +
-    facet_wrap(~site_name , scales= 'free') +
-    theme_classic() +
-    labs(x= 'Year',
-         y= 'Clinical mortality per thousand, all-age',
-         title= 'All-age clinical mortality over time by scenario, carrying capacity scalers',
-         subtitle = iso3c)
+# annual_agg<- data.table(annual_agg)
+#   p<- ggplot(data= annual_agg[site_name == 'Gash Barka'], mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
+#     geom_line(lwd= 0.5) +
+#     facet_wrap(~site_name , scales= 'free') +
+#     theme_classic() +
+#     labs(x= 'Year',
+#          y= 'Clinical mortality per thousand, all-age',
+#          title= 'All-age clinical mortality over time by scenario, carrying capacity scalers',
+#          subtitle = iso3c)
 
 
 #     p<- ggplot(data= monthly_agg, mapping = aes(x= month, y= clinical, color= scenario, fill= scenario)) +

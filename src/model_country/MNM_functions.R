@@ -117,7 +117,11 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
     overrides = list(human_population = 50000)
   )
   
+if (description== 'test'){
 
+  params$human_population<- 5000
+  
+}
   if(scenario == 'new_tools'){
 
 cc <- get_init_carrying_capacity(params)
@@ -148,7 +152,7 @@ params<- params |>
 
   if(site_name == 'Oromia'){
 
-    params<- set_equilibrium(params, init_EIR = 18)
+    params<- set_equilibrium(params, init_EIR = 25)
 
 
 
@@ -192,7 +196,12 @@ analyse_mnm<- function(site,
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
-  pop<- site_data$population |>
+  pop<- site_data$population 
+  pop<- data.table::data.table(site_data$population)
+  Encoding(pop$name_1) <- "UTF-8"
+  pop$name_1<- iconv(pop$name_1, from="UTF-8", to="ASCII//TRANSLIT")                     
+                         
+  pop<- pop|>
     filter(name_1 == site$site_name,
            urban_rural == site$ur) |>
     select(year, pop)
@@ -258,6 +267,7 @@ monthly_pop[, month := 1:.N]
     rename(year = t)
   monthly_output<- monthly_output |>
     rename(month = t)
+
   # merge on population
   annual_output<- merge(annual_output, pop, by = 'year') 
   monthly_output<- merge(monthly_output, monthly_pop, by = 'month')
