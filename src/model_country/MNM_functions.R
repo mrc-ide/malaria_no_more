@@ -41,6 +41,44 @@ site$interventions <- site$interventions |>
   mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
   scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
 
+  if(scenario == 'best_case'){
+
+  # Rough example of scaling mass distributions to achieve ~80% usage by 2040
+  t <-  c(1:16) * 365
+  dist_t <- c(0:15) * 365 + 1
+  # Current 2024 usage - this will vary by site
+  cur_use <- site$interventions |>
+    filter(year == 2024) |>
+    pull(itn_use)
+  # Mass distirbyution scale up to 0.95
+  mass <- seq(cur_use, 0.9, length.out = 16 / 3)
+  # Some small continuous dist between mass years
+  continuous <- 0.2
+    
+  # Mix mass distributions and continuous distributions on 3 yearly cycle
+  dist <- as.vector(sapply(mass, function(x){c(x, continuous, continuous)}))[1:16]
+
+  # Estimate model usage over time
+  mu <- netz::model_distribution_to_usage(
+    usage_timesteps = t,
+    distribution = dist,
+    distribution_timesteps = dist_t,
+    mean_retention = 365 * 5
+  )
+
+      # Plot model usage over time
+  # plot((t / 365) + 2024,mu, t = "l", ylim = c(0, 1), ylab = "Modelled use", xlab = "Year")
+  # abline(h = 0.8, lty = 2)
+    
+  # write up usage dataset 
+  use<- data.table('itn_use2' = mu, year= c(2025:2040))
+
+   modify<-  merge(site$interventions, use, by = 'year', all.x= TRUE) |>
+     mutate(itn_use = ifelse(year> 2024, itn_use2, itn_use)) |>
+     select(-itn_use2)
+
+    site$interventions<- modify
+  }
   
   # check the site has a non-zero EIR
   check_eir(site)
@@ -117,12 +155,8 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
     overrides = list(human_population = 50000)
   )
   
-if (description== 'test'){
 
-  params$human_population<- 5000
-  
-}
-  if(scenario == 'new_tools'){
+  if(scenario %in% c('new_tools', 'best_case')){
 
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
@@ -153,7 +187,6 @@ params<- params |>
   if(site_name == 'Oromia'){
 
     params<- set_equilibrium(params, init_EIR = 25)
-
 
 
   }
@@ -196,7 +229,6 @@ analyse_mnm<- function(site,
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
-  pop<- site_data$population 
   pop<- data.table::data.table(site_data$population)
   Encoding(pop$name_1) <- "UTF-8"
   pop$name_1<- iconv(pop$name_1, from="UTF-8", to="ASCII//TRANSLIT")                     
@@ -376,7 +408,7 @@ run_mnm_model<- function(model_input){
       interval = 3
     )
     
-  }else if(model_input$scenario == 'new_tools'){
+  }else if(model_input$scenario %in% c('new_tools', 'best_case')){
     
     first_phase <- retry::retry(
       malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years

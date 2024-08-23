@@ -28,14 +28,14 @@ library(scene)
 # vaccine_scaleup: 80% coverage of R21 (and 90% booster coverage) beginning in 2022
 # worst_case: remove all interventions after 2022
 
-scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case')
+scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
 
 
 # to run workflow:
 # this will error out unless you have saved coverage and site file inputs in your src/model-country directory--
 # contact Lydia for filepaths
 hipercow::hipercow_init(driver = 'windows')
-#hipercow::hipercow_provision()
+hipercow::hipercow_provision()
 hipercow::hipercow_environment_create(sources = 'src/model_country/MNM_functions.R')
 hipercow::hipercow_configuration()
 
@@ -47,7 +47,6 @@ extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
 #see what reports from the worst case scenario have compeleted ( a few are still running on the cluster)
 reports<- completed_reports('model_country') |> filter(scenario == 'worst_case')
 iso3cs_done<- unique(reports$iso3c) # will need to run remainder when all jobs complete
-
 
 
 submit_country<- function(iso, scen, descrip, report_name){
@@ -92,13 +91,16 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  c('GAB'), #  c(vimc_iso3cs, extra_iso3cs)
+  c('COD', 'BFA', 'NGA'), #  c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'model_country',
-  scen = 'vaccine_scaleup', # c('new_tools', 'vaccine_scaleup', 'worst_case')
+  scen = 'best_case', # c('new_tools', 'vaccine_scaleup', 'worst_case')
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
+hipercow::task_log_watch('8478944ff371abb531bd826a0244a849')
+hipercow::task_log_show('5287688d011ecf04a447249887cb2995')
+hipercow::task_log_show('35b7b7522709c829344853c91d46320b')
 
 # run postprocessing
 lapply(
@@ -177,7 +179,7 @@ saveRDS(outputs$monthly, 'outputs/gene_drive_fix_monthly.rds')
 
 
 
-pdf('plots/comparative_incidence_plots_gene_drive_fix.pdf', width = 12, height= 10)
+pdf('plots/comparative_incidence_plots_gene_drive_fix_3.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)

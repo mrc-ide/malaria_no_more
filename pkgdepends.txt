@@ -1,10 +1,11 @@
 
-mrc-ide/malariasimulation@dev
+mrc-ide/malariasimulation@8bb953cfc92825611a69219f60ebda917362fc1a
 mrc-ide/site@vimc
 mrc-ide/postie@dalys
 mrc-ide/scene
 mrc-ide/orderly2
 mrc-ide/vimcmalaria
+mrc-ide/netz@netz2
 
 
 data.table
