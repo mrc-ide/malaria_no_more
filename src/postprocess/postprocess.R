@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'SEN',
-                             description = 'gene_drive_fix')
+orderly2::orderly_parameters(iso3c = NULL,
+                             description = NULL)
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -50,12 +50,13 @@ annual_children<- annual |>
   filter(age < 5.01) |>
     mutate(
       cases = clinical * prop_n * pop,
-      deaths = mortality * prop_n * pop
+      deaths = mortality * prop_n * pop,
+      pop= prop_n * pop
     ) |>
     summarise(
       cases = sum(cases),
       deaths = sum(deaths),
-      pop = mean(pop), # population is the same regardless of age group so will retain true value
+      pop = sum(pop), # population is the same regardless of age group so will retain true value
       .groups = "keep"
     ) |>
     mutate(
@@ -139,24 +140,20 @@ saveRDS(annual_agg, 'annual_output.rds')
 saveRDS(annual_children, 'annual_children.rds')
 saveRDS(monthly_agg, 'monthly_output.rds')
 
-# quick plot of outputs for 1-year olds
+# quick plot of outputs 
 # pdf('ben_plots.pdf')
-
 #   message(site)
-# annual_agg<- data.table(annual_agg)
+#annual_agg<- data.table(annual_agg)
 
 
-#     p<- ggplot(data= monthly_agg, mapping = aes(x= month, y= clinical, color= scenario, fill= scenario)) +
-#     geom_line(lwd= 0.5) +
-#     facet_wrap(~site_name) +
-#     theme_classic() +
-#     labs(x= 'Year',
-#          y= 'Clinical incidence, all-age',
-#          title= 'All-age clinical incidence over time by scenario',
-#          subtitle = iso3c)
+  #   p<- ggplot(data= annual_agg[scenario%in% c('best_case', 'new_tools')], mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
+  #   geom_line(lwd= 0.5) +
+  #   facet_wrap(~site_name) +
+  #   theme_classic() +
+  #   labs(x= 'Year',
+  #        y= 'Clinical incidence, all-age',
+  #        title= 'All-age clinical incidence over time by scenario',
+  #        subtitle = iso3c)
   
-  
-#   print(p)
-  
-
+  # print(p)
 # dev.off()

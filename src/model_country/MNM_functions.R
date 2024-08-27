@@ -43,6 +43,15 @@ site$interventions <- site$interventions |>
 
   if(scenario == 'best_case'){
 
+  # only update ITN coverage to scale up to 80% coverage if coverage is not at 80% already by 2023 
+  # there are a few cases where coverage is already this high
+  
+   itn_use_val<- site$interventions |>
+      filter(year %in% c(2021:2023)) |>
+      pull(itn_use) |>
+      mean()
+  
+    if(itn_use_val < 0.70){
   # Rough example of scaling mass distributions to achieve ~80% usage by 2040
   t <-  c(1:16) * 365
   dist_t <- c(0:15) * 365 + 1
@@ -71,13 +80,15 @@ site$interventions <- site$interventions |>
   # abline(h = 0.8, lty = 2)
     
   # write up usage dataset 
-  use<- data.table('itn_use2' = mu, year= c(2025:2040))
+  use<- data.table('itn_use2' = mu, 'itn_dist'= dist, year= c(2025:2040))
 
    modify<-  merge(site$interventions, use, by = 'year', all.x= TRUE) |>
      mutate(itn_use = ifelse(year> 2024, itn_use2, itn_use)) |>
-     select(-itn_use2)
+      mutate(itn_input_dist = ifelse(year> 2024, itn_dist, itn_input_dist)) |>
+     select(-itn_use2, itn_dist)
 
     site$interventions<- modify
+    }
   }
   
   # check the site has a non-zero EIR

@@ -1,8 +1,8 @@
 # orderly metadata  ----
 orderly2::orderly_parameters(
-  iso3c = NULL,
-  scenario = NULL,
-  description = NULL
+  iso3c = 'NGA',
+  scenario  ='best_case',
+  description  = 'testing'
 )
 
 
