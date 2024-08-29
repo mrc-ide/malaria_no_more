@@ -43,11 +43,7 @@ hipercow::hipercow_configuration()
 coverage<- read.csv('src/model_country/bluesky_r21.csv')
 vimc_iso3cs<- unique(coverage$country_code)
 extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
-
-#see what reports from the worst case scenario have compeleted ( a few are still running on the cluster)
-reports<- completed_reports('model_country') |> filter(scenario == 'worst_case')
-iso3cs_done<- unique(reports$iso3c) # will need to run remainder when all jobs complete
-
+iso3cs<- c(vimc_iso3cs, extra_iso3cs)
 
 submit_country<- function(iso, scen, descrip, report_name){
   if (iso %in% vimc_iso3cs){
@@ -91,23 +87,23 @@ submit_country<- function(iso, scen, descrip, report_name){
 
 # run model country
 lapply(
-  c('COD', 'BFA', 'NGA'), #  c(vimc_iso3cs, extra_iso3cs)
+  iso3cs, #  
   submit_country,
   report_name = 'model_country',
-  scen = 'best_case', # c('new_tools', 'vaccine_scaleup', 'worst_case')
+  scen = 'itn_change', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
-hipercow::task_log_watch('8478944ff371abb531bd826a0244a849')
+hipercow::task_log_watch('bd2c349dd0d530448204eb0985332743')
 hipercow::task_log_show('5287688d011ecf04a447249887cb2995')
 hipercow::task_log_show('35b7b7522709c829344853c91d46320b')
 
 # run postprocessing
 lapply(
-  c("COG"), # c(vimc_iso3cs, extra_iso3cs)
+  c('BWA', 'NAM'), # c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'postprocess',
-  scen = NULL, # 'new_tools', 'vaccine_scaleup', 'worst_case'
+  scen = 'best_case', # 'new_tools', 'vaccine_scaleup', 'worst_case'
   descrip = 'gene_drive_fix'
 )
 
@@ -157,12 +153,23 @@ compile_mnm_outputs<- function(){
     output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
+  pull_u5_output<- function(index, map){
+    
+    message(index)
+    map<- map[ index,]
+    directory_name<- map$directory_name
+    iso3c<- map$iso3c
+    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_children.rds')) 
+    return(output)
+  }
 
 
   outputs_annual<- bind_rows(lapply(c(1:nrow(completed)), pull_annual_output, map = completed))
   outputs_monthly<- bind_rows(lapply(c(1:nrow(completed)), pull_month_output, map = completed))
+  outputs_u5<- bind_rows(lapply(c(1:nrow(completed)), pull_u5_output, map = completed))
 
-  outputs<- list('annual' = outputs_annual, 'monthly' = outputs_monthly)
+
+  outputs<- list('annual' = outputs_annual, 'monthly' = outputs_monthly, 'u5' = outputs_u5)
 
   return(outputs)
 }
@@ -172,14 +179,18 @@ outputs<- compile_mnm_outputs()
 
 
 write.csv(outputs$annual, 'outputs/gene_drive_fix_annual.csv')
+write.csv(outputs$u5, 'outputs/gene_drive_fix_annual_u5.csv')
+
 write.csv(outputs$monthly, 'outputs/gene_drive_fix_monthly.csv')
 
 saveRDS(outputs$annual, 'outputs/gene_drive_fix_annual.rds')
+saveRDS(outputs$u5, 'outputs/gene_drive_fix_annual_u5.rds')
+
 saveRDS(outputs$monthly, 'outputs/gene_drive_fix_monthly.rds')
 
 
 
-pdf('plots/comparative_incidence_plots_gene_drive_fix_3.pdf', width = 12, height= 10)
+pdf('plots/diagnostic_plots_itn_60_2.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)
@@ -187,15 +198,62 @@ for(iso3c in unique(outputs$annual$country)){
 
     p<- ggplot(data= annual, mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
     geom_line(lwd= 0.5) +
-    facet_wrap(~site_name , scales= 'free') +
+    facet_wrap(~site_name + urban_rural , scales= 'free') +
     theme_classic() +
     labs(x= 'Year',
          y= 'Clinical incidence per thousand, all-age',
          title= 'All-age clinical incidence over time by scenario',
          subtitle = iso3c)
   
+    p2<- ggplot(data= annual, mapping = aes(x= year, y= mortality * 1000, color= scenario, fill= scenario)) +
+          geom_line(lwd= 0.5) +
+          facet_wrap(~site_name + urban_rural , scales= 'free') +
+          theme_classic() +
+          labs(x= 'Year',
+               y= 'Mortality per thousand, all-age',
+               title= 'All-age mortality over time by scenario',
+               subtitle = iso3c)
+  
   print(p)
+  print(p2)
 
 }
 
 dev.off()
+
+
+
+
+pull_itn_coverage<- function(iso){
+  if (iso %in% vimc_iso3cs){
+
+    site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
+
+  } else if (iso %in% extra_iso3cs){
+
+    site_data <- readRDS(paste0('src/model_country/original_site_files/', iso, '.RDS'))
+  }  
+  if (iso == 'UGA'){
+    site_data <- readRDS(paste0('src/model_country/original_site_files/', iso, '.RDS'))
+  }
+
+itns<- site_data$interventions |>
+  filter(year == 2022) |>
+  select(name_1, urban_rural, itn_use, itn_input_dist)
+  
+  return(itns)
+
+}
+itn_covs<- rbindlist(lapply(iso3cs, pull_itn_coverage))
+itn_covs<- data.table(itn_covs)
+
+
+boxplot(itn_covs$itn_use) +
+  title('ITN coverage by admin 1 unit, 2022')
+
+
+itn_nga<- pull_itn_coverage('NGA')
+
+
+
+nrow(itn_covs[itn_use > .8])

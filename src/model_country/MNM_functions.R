@@ -41,28 +41,28 @@ site$interventions <- site$interventions |>
   mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
   scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
 
-  if(scenario == 'best_case'){
-
-  # only update ITN coverage to scale up to 80% coverage if coverage is not at 80% already by 2023 
+  if(scenario %in% c('itn_change', 'best_case')){
+# Rough example of scaling mass distributions to achieve ~80% usage by 2040
+  # only update ITN coverage to scale up to 80% coverage if coverage is not at ~ 80% already by 2023 
   # there are a few cases where coverage is already this high
-  
    itn_use_val<- site$interventions |>
       filter(year %in% c(2021:2023)) |>
       pull(itn_use) |>
       mean()
   
-    if(itn_use_val < 0.70){
-  # Rough example of scaling mass distributions to achieve ~80% usage by 2040
-  t <-  c(1:16) * 365
+    if(itn_use_val < 0.60){
+  # Rough example of scaling mass distributions to achieve ~60% usage by 2040
+  t <-  1:(16 * 365)
   dist_t <- c(0:15) * 365 + 1
   # Current 2024 usage - this will vary by site
   cur_use <- site$interventions |>
     filter(year == 2024) |>
     pull(itn_use)
-  # Mass distirbyution scale up to 0.95
-  mass <- seq(cur_use, 0.9, length.out = 16 / 3)
+  
+  # Mass distirbyution scale up
+  mass <- seq(cur_use, 0.45, length.out = 16 / 3)
   # Some small continuous dist between mass years
-  continuous <- 0.2
+  continuous <- 0.1
     
   # Mix mass distributions and continuous distributions on 3 yearly cycle
   dist <- as.vector(sapply(mass, function(x){c(x, continuous, continuous)}))[1:16]
@@ -76,11 +76,14 @@ site$interventions <- site$interventions |>
   )
 
       # Plot model usage over time
-  # plot((t / 365) + 2024,mu, t = "l", ylim = c(0, 1), ylab = "Modelled use", xlab = "Year")
-  # abline(h = 0.8, lty = 2)
+  # plot((t / 365) + 2024,mu, t = "l", ylim = c(0, 1), ylab = "Modelled use update", xlab = "Year") +
+  # abline(h = 0.6, lty = 2)
     
-  # write up usage dataset 
-  use<- data.table('itn_use2' = mu, 'itn_dist'= dist, year= c(2025:2040))
+  # write up usage dataset -- transform from timestep to year, using first value in the year
+  use<- data.table('itn_use2' = mu, 'itn_dist'= dist, timestep= t) |>
+    mutate(year = round(timestep/365)+2024) |>
+    unique(by = 'year') |>
+    select(-timestep)
 
    modify<-  merge(site$interventions, use, by = 'year', all.x= TRUE) |>
      mutate(itn_use = ifelse(year> 2024, itn_use2, itn_use)) |>
@@ -167,7 +170,7 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   )
   
 
-  if(scenario %in% c('new_tools', 'best_case')){
+  if(scenario %in% c('new_tools', 'itn_change')){
 
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
@@ -419,7 +422,7 @@ run_mnm_model<- function(model_input){
       interval = 3
     )
     
-  }else if(model_input$scenario %in% c('new_tools', 'best_case')){
+  }else if(model_input$scenario %in% c('new_tools', 'best_case', 'itn_change')){
     
     first_phase <- retry::retry(
       malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years
