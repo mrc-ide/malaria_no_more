@@ -89,8 +89,8 @@ submit_country<- function(iso, scen, descrip, report_name){
 lapply(
   iso3cs, #  
   submit_country,
-  report_name = 'model_country',
-  scen = 'itn_change', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
+  report_name = 'postprocess',
+  scen = '', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
@@ -138,7 +138,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
+    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
     # M:/Lydia/malaria_no_more/archive/postprocess/
     # J:/malaria_no_more/archive/postprocess/
     
@@ -150,7 +150,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
+    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
   pull_u5_output<- function(index, map){
@@ -159,7 +159,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('J:/malaria_no_more/archive/postprocess/', directory_name, '/annual_children.rds')) 
+    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_children.rds')) 
     return(output)
   }
 
