@@ -53,19 +53,19 @@ site$interventions <- site$interventions |>
     if(itn_use_val < 0.60){
   # Rough example of scaling mass distributions to achieve ~60% usage by 2040
   t <-  1:(16 * 365)
-  dist_t <- c(0:15) * 365 + 1
+  dist_t <- c(0:16) * 365 + 1
   # Current 2024 usage - this will vary by site
   cur_use <- site$interventions |>
     filter(year == 2024) |>
     pull(itn_use)
   
-  # Mass distirbyution scale up
+  # Mass distribution scale up
   mass <- seq(cur_use, 0.45, length.out = 16 / 3)
   # Some small continuous dist between mass years
   continuous <- 0.1
     
   # Mix mass distributions and continuous distributions on 3 yearly cycle
-  dist <- as.vector(sapply(mass, function(x){c(x, continuous, continuous)}))[1:16]
+  dist <- as.vector(sapply(mass, function(x){c(x, continuous, continuous)}))[1:17]
 
   # Estimate model usage over time
   mu <- netz::model_distribution_to_usage(
@@ -75,20 +75,23 @@ site$interventions <- site$interventions |>
     mean_retention = 365 * 5
   )
 
-      # Plot model usage over time
+  # Plot model usage over time
   # plot((t / 365) + 2024,mu, t = "l", ylim = c(0, 1), ylab = "Modelled use update", xlab = "Year") +
   # abline(h = 0.6, lty = 2)
     
-  # write up usage dataset -- transform from timestep to year, using first value in the year
-  use<- data.table('itn_use2' = mu, 'itn_dist'= dist, timestep= t) |>
+  # write up usage dataset -- transform from timestep to year
+  use<- data.table('itn_use2' = mu, timestep= t) |>
     mutate(year = round(timestep/365)+2024) |>
-    unique(by = 'year') |>
-    select(-timestep)
+    group_by(year) |>
+    dplyr::summarise(itn_use2= mean(itn_use2)) 
+      
+dist_dt<- data.table('itn_dist' = dist, year= round(dist_t/365) +2024) 
+  use<-merge(dist_dt, use, by = 'year', all.y = TRUE) 
 
    modify<-  merge(site$interventions, use, by = 'year', all.x= TRUE) |>
-     mutate(itn_use = ifelse(year> 2024, itn_use2, itn_use)) |>
-      mutate(itn_input_dist = ifelse(year> 2024, itn_dist, itn_input_dist)) |>
-     select(-itn_use2, itn_dist)
+     mutate(itn_use = ifelse(year > 2023, itn_use2, itn_use)) |>
+      mutate(itn_input_dist = ifelse(year > 2023, itn_dist, itn_input_dist)) |>
+     select(-itn_use2, -itn_dist)
 
     site$interventions<- modify
     }

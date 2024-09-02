@@ -3,7 +3,7 @@ orderly2::orderly_parameters(
   iso3c = NULL,
   scenario  = NULL,
   description  = NULL)
-)
+
 
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')

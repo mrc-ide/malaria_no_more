@@ -94,13 +94,13 @@ lapply(
   descrip = 'gene_drive_fix' # 'scale_tx_cov'
 )
 
-hipercow::task_log_watch('bd2c349dd0d530448204eb0985332743')
+hipercow::task_log_watch('c097bd8edd448ef22e2de370cde7a4a1')
 hipercow::task_log_show('5287688d011ecf04a447249887cb2995')
 hipercow::task_log_show('35b7b7522709c829344853c91d46320b')
 
 # run postprocessing
 lapply(
-  c('BWA', 'NAM'), # c(vimc_iso3cs, extra_iso3cs)
+  iso3cs[29:40], # c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'postprocess',
   scen = 'best_case', # 'new_tools', 'vaccine_scaleup', 'worst_case'
@@ -190,11 +190,11 @@ saveRDS(outputs$monthly, 'outputs/gene_drive_fix_monthly.rds')
 
 
 
-pdf('plots/diagnostic_plots_itn_60_2.pdf', width = 12, height= 10)
+pdf('plots/diagnostic_plots_itn_60_no_worst_case.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)
-  annual<- outputs$annual |> filter(country == iso3c)
+  annual<- outputs$annual |> filter(country == iso3c) |> filter(scenario!= 'worst_case')
 
     p<- ggplot(data= annual, mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
     geom_line(lwd= 0.5) +

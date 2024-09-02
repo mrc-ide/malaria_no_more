@@ -17,7 +17,7 @@ new_tools<- 'new_tools'
 scaleup<- 'vaccine_scaleup'
 worst_case<- 'worst_case'
 best_case<- 'best_case'
-itn<- 'itn_60'
+itn<- 'itn_change'
 
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:new_tools &&
