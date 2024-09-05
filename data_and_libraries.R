@@ -11,6 +11,7 @@ library(terra)
 library(malariaAtlas) 
 library(umbrella)   # remotes::install_github('mrc-ide/umbrella')
 library(beepr)
+library(zoo)
 
 # HPC
 library(hipercow) # for computer cluster: https://mrc-ide.github.io/hipercow/articles/hipercow.html
