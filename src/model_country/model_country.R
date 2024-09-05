@@ -1,10 +1,13 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
-                             scenario = NULL,
-                             description = NULL)
+orderly2::orderly_parameters(
+  iso3c = NULL,
+  scenario  = NULL,
+  description  = NULL)
+
+
 
 orderly2::orderly_description('Model country scenarios for Malaria No More Artwork')
-orderly2::orderly_artefact('Model output', 'outputs.rds')
+orderly2::orderly_artefact(description = 'Model output', files=  'outputs.rds')
 # packages and functions ----
 library(site)
 library(data.table)
@@ -19,8 +22,23 @@ library(vimcmalaria)
 
 source('MNM_functions.R')
 # read in dependencies  ----
-coverage_data<- read.csv('bluesky_r21.csv') |> filter(year <= 2040)
-site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
+coverage_data<- read.csv('coverage_80.csv') |> filter(year <= 2040) # 'bluesky_r21.csv'
+extra_iso3cs<- extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
+
+if (iso3c %in% extra_iso3cs){
+
+  site_data <- readRDS(paste0('original_site_files/', iso3c, '.RDS'))
+
+  #pull coverage data for another country and rename to country of interest
+  # need to do this for vimc functions to work
+  # note vaccine coverage is uniform across all countries for these runs
+  coverage_data<- coverage_data |> 
+    filter(country_code == 'NGA') |>
+    mutate(country_code = iso3c)
+
+} else{
+  site_data <- readRDS(paste0('site_files/', iso3c, '_new_EIR.rds'))
+}
 
 if(iso3c == 'UGA'){
   site_data <- readRDS(paste0('site_files/', iso3c, '.RDS'))

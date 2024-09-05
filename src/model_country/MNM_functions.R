@@ -22,22 +22,85 @@ parameterise_mnm<- function(site_name,
   site<- vimcmalaria::expand_intervention_coverage(site,
                                       terminal_year = 2040)
   
+  
+  # to follow vimc coverage levels
   site<- vimcmalaria::update_coverage_values(site,
                                 iso3c = iso3c,
                                 coverage_data,
                                 scenario_name = 'malaria-r3-r4-bluesky')
   
-  if(scenario == 'no-vaccination'){
+  if(scenario == 'no-vaccination' | scenario == 'worst_case'){
     
     site$interventions$r21_booster_coverage<- 0
     site$interventions$r21_coverage<- 0
   }
   
+  # scale treatment up to 80%  from 2022-2034
+site$interventions <- site$interventions |>
+  mutate(tx_cov = ifelse(year %in% c(2022:2034), NA, tx_cov)) |>
+  mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
+  scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
+
+  if(scenario %in% c('itn_change', 'best_case')){
+# Rough example of scaling mass distributions to achieve ~80% usage by 2040
+  # only update ITN coverage to scale up to 80% coverage if coverage is not at ~ 80% already by 2023 
+  # there are a few cases where coverage is already this high
+   itn_use_val<- site$interventions |>
+      filter(year %in% c(2021:2023)) |>
+      pull(itn_use) |>
+      mean()
+  
+    if(itn_use_val < 0.60){
+  # Rough example of scaling mass distributions to achieve ~60% usage by 2040
+  t <-  1:(16 * 365)
+  dist_t <- c(0:16) * 365 + 1
+  # Current 2024 usage - this will vary by site
+  cur_use <- site$interventions |>
+    filter(year == 2024) |>
+    pull(itn_use)
+  
+  # Mass distribution scale up
+  mass <- seq(cur_use, 0.45, length.out = 16 / 3)
+  # Some small continuous dist between mass years
+  continuous <- 0.1
+    
+  # Mix mass distributions and continuous distributions on 3 yearly cycle
+  dist <- as.vector(sapply(mass, function(x){c(x, continuous, continuous)}))[1:17]
+
+  # Estimate model usage over time
+  mu <- netz::model_distribution_to_usage(
+    usage_timesteps = t,
+    distribution = dist,
+    distribution_timesteps = dist_t,
+    mean_retention = 365 * 5
+  )
+
+  # Plot model usage over time
+  # plot((t / 365) + 2024,mu, t = "l", ylim = c(0, 1), ylab = "Modelled use update", xlab = "Year") +
+  # abline(h = 0.6, lty = 2)
+    
+  # write up usage dataset -- transform from timestep to year
+  use<- data.table('itn_use2' = mu, timestep= t) |>
+    mutate(year = round(timestep/365)+2024) |>
+    group_by(year) |>
+    dplyr::summarise(itn_use2= mean(itn_use2)) 
+      
+dist_dt<- data.table('itn_dist' = dist, year= round(dist_t/365) +2024) 
+  use<-merge(dist_dt, use, by = 'year', all.y = TRUE) 
+
+   modify<-  merge(site$interventions, use, by = 'year', all.x= TRUE) |>
+     mutate(itn_use = ifelse(year > 2023, itn_use2, itn_use)) |>
+      mutate(itn_input_dist = ifelse(year > 2023, itn_dist, itn_input_dist)) |>
+     select(-itn_use2, -itn_dist)
+
+    site$interventions<- modify
+    }
+  }
   
   # check the site has a non-zero EIR
   check_eir(site)
   
-  if(site$country %in% c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA')){
+  if(site$country %in% c('ETH', 'KEN', 'MOZ', 'MRT', 'SDN', 'UGA', 'NGA', 'GNQ')){
     
     # make blank vector sheet
     vectrow <-  tibble(species = c("arabiensis", "funestus", "gambiae"),
@@ -88,7 +151,16 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   site$vectors<- vex
 }
 
-  
+  if(scenario == 'worst_case'){ # test a case where all interventions are set to zero after 2022
+
+  test <- data.table(site$interventions)
+
+  test[year > 2022, `:=`( irs_cov = 0, itn_input_dist = 0, itn_use = 0, smc_cov = 0, tx_cov = 0, rtss_cov = 0, pmc_cov = 0)]
+
+  site$interventions<- test
+    
+  }
+
   # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
@@ -101,7 +173,7 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   )
   
 
-  if(scenario == 'new_tools'){
+  if(scenario %in% c('new_tools', 'itn_change')){
 
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
@@ -112,12 +184,11 @@ if(is.na(cc["gambiae"]) == FALSE){
 # ncol: species
 params<- params |>
   set_carrying_capacity(
-    carrying_capacity = matrix(c(rep(1, times= 5*(n_vectors -1)), 0.81, 0.62, 0.43, 0.24, 0.05), ncol = n_vectors),
-    timesteps = (c(31, 32, 33, 34, 35)+ 15)  * 365
+    carrying_capacity_scalers = matrix(c(rep(1, times= 9*(n_vectors -1)), 0.89, 0.79, 0.68, 0.58, 0.47, 0.37, 0.26, 0.16, 0.05), ncol= n_vectors),
+    timesteps = (c(32, 33, 34, 35, 36, 37, 38, 39, 40)+ 15)  * 365
   )
 
 }
-
   }
 
   
@@ -130,8 +201,16 @@ params<- params |>
   params$age_group_rendering_max_ages = run_params$max_ages
 
 
+  if(site_name == 'Oromia'){
+
+    params<- set_equilibrium(params, init_EIR = 25)
+
+
+  }
+
   params$pev<- TRUE
   
+
   inputs <- list(
     'param_list' = params,
     'site_name' = site_name,
@@ -167,7 +246,11 @@ analyse_mnm<- function(site,
   # calculate rates
   raw_output<- drop_burnin(model, burnin= unique(model$burnin)* 365)
   
-  pop<- site_data$population |>
+  pop<- data.table::data.table(site_data$population)
+  Encoding(pop$name_1) <- "UTF-8"
+  pop$name_1<- iconv(pop$name_1, from="UTF-8", to="ASCII//TRANSLIT")                     
+                         
+  pop<- pop|>
     filter(name_1 == site$site_name,
            urban_rural == site$ur) |>
     select(year, pop)
@@ -185,9 +268,7 @@ for (i in unique(pop$year)) {
   monthly_pop <- rbind(monthly_pop, year_dt, fill = T)
 }
 monthly_pop[, month := 1:.N]
-monthly_pop<- monthly_pop |>
-  select(-year)
-  
+
   
   # add identifying columns
   raw_output<- raw_output |>
@@ -235,6 +316,7 @@ monthly_pop<- monthly_pop |>
     rename(year = t)
   monthly_output<- monthly_output |>
     rename(month = t)
+
   # merge on population
   annual_output<- merge(annual_output, pop, by = 'year') 
   monthly_output<- merge(monthly_output, monthly_pop, by = 'month')
@@ -334,7 +416,7 @@ run_mnm_model<- function(model_input){
   
   set.seed(56)
   
-  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination')){
+  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination', 'worst_case')){
     model <- retry::retry(
       malariasimulation::run_simulation(timesteps = params$timesteps,
                                         parameters = params),
@@ -343,7 +425,7 @@ run_mnm_model<- function(model_input){
       interval = 3
     )
     
-  }else if(model_input$scenario == 'new_tools'){
+  }else if(model_input$scenario %in% c('new_tools', 'best_case', 'itn_change')){
     
     first_phase <- retry::retry(
       malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years
