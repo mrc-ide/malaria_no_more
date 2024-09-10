@@ -1,6 +1,6 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = 'NGA',
-                             description = 'gene_drive_fix')
+orderly2::orderly_parameters(iso3c = NULL,
+                             description = NULL)
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
 
@@ -28,9 +28,9 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
 orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                              parameter:scenario == environment:worst_case &&
                              parameter:description == this:description)", c(worst_case.rds = "outputs.rds"))                         
-orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                              parameter:scenario == environment:best_case &&
-                              parameter:description == this:description)", c(best_case.rds = "outputs.rds"))
+# orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
+#                               parameter:scenario == environment:best_case &&
+#                               parameter:description == this:description)", c(best_case.rds = "outputs.rds"))
  orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
                               parameter:scenario == environment:itn &&
                               parameter:description == this:description)", c(itn_60.rds = "outputs.rds"))
@@ -39,7 +39,7 @@ orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:is
 new_tools<- readRDS('new_tools.rds')
 scaleup<- readRDS('scaleup.rds')
 worst_case<- readRDS('worst_case.rds')
-best_case<- readRDS('best_case.rds')
+#best_case<- readRDS('best_case.rds')
 itn_60<- readRDS('itn_60.rds')
 # moving_average <- function(series, klags) {
 #   return(
@@ -48,8 +48,8 @@ itn_60<- readRDS('itn_60.rds')
 #       )
 #   )
 # }
-annual<- bind_rows(new_tools$annual, scaleup$annual, worst_case$annual, best_case$annual, itn_60$annual)
-monthly<- bind_rows(new_tools$monthly, scaleup$monthly, worst_case$monthly, best_case$monthly, itn_60$monthly)
+annual<- bind_rows(new_tools$annual, scaleup$annual, worst_case$annual, itn_60$annual)
+monthly<- bind_rows(new_tools$monthly, scaleup$monthly, worst_case$monthly, itn_60$monthly)
 
 # pull and modify annual rates under 5 after 2025 down 20% (assuming rectal artenusate administration)
 annual<- annual |>
@@ -164,14 +164,14 @@ saveRDS(monthly_agg, 'monthly_output.rds')
 # annual_agg<- data.table(annual_agg)
 
 
-  #   p<- ggplot(data= annual_agg, mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
-  #   geom_line(lwd= 0.5) +
-  #   facet_wrap(~site_name) +
-  #   theme_classic() +
-  #   labs(x= 'Year',
-  #        y= 'Clinical incidence, all-age',
-  #        title= 'All-age clinical incidence over time by scenario',
-  #        subtitle = iso3c)
+    p<- ggplot(data= annual_agg, mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
+    geom_line(lwd= 0.5) +
+    facet_wrap(~site_name) +
+    theme_classic() +
+    labs(x= 'Year',
+         y= 'Clinical incidence, all-age',
+         title= 'All-age clinical incidence over time by scenario',
+         subtitle = iso3c)
   
-  # print(p)
+  print(p)
 # dev.off()

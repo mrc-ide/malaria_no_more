@@ -49,6 +49,7 @@ if(iso3c == 'UGA'){
 site_df<- remove_zero_eirs(iso3c, site_data)
 map<- make_mnm_analysis_map(site_df, test = FALSE)
 
+
 # run analysis function for each site + urban/rural combination ----
 cluster_cores <- Sys.getenv("CCP_NUMCPUS")
 if (cluster_cores == "") {

@@ -90,8 +90,8 @@ lapply(
   iso3cs, #  
   submit_country,
   report_name = 'postprocess',
-  scen = '', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
-  descrip = 'gene_drive_fix' # 'scale_tx_cov'
+  scen = 'itn_change', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
+  descrip = 'updated_run' # 'scale_tx_cov'
 )
 
 hipercow::task_log_watch('c097bd8edd448ef22e2de370cde7a4a1')
@@ -125,7 +125,7 @@ reports <- vimcmalaria::completed_reports('model_country')
 compile_mnm_outputs<- function(){
   
   completed<- vimcmalaria::completed_reports('postprocess') |>
-    filter(description == 'gene_drive_fix')
+    filter(description == 'updated_run')
   completed<- completed |>
     dplyr::arrange(desc(date_time)) |>
     dplyr::distinct(iso3c, description, .keep_all = TRUE) |>
@@ -138,7 +138,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_output.rds')) 
+    output<- readRDS(paste0('./archive/postprocess/', directory_name, '/annual_output.rds')) 
     # M:/Lydia/malaria_no_more/archive/postprocess/
     # J:/malaria_no_more/archive/postprocess/
     
@@ -150,7 +150,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/monthly_output.rds')) 
+    output<- readRDS(paste0('./archive/postprocess/', directory_name, '/monthly_output.rds')) 
     return(output)
   }
   pull_u5_output<- function(index, map){
@@ -159,7 +159,7 @@ compile_mnm_outputs<- function(){
     map<- map[ index,]
     directory_name<- map$directory_name
     iso3c<- map$iso3c
-    output<- readRDS(paste0('M:/Lydia/malaria_no_more/archive/postprocess/', directory_name, '/annual_children.rds')) 
+    output<- readRDS(paste0('./archive/postprocess/', directory_name, '/annual_children.rds')) 
     return(output)
   }
 
@@ -178,23 +178,23 @@ compile_mnm_outputs<- function(){
 outputs<- compile_mnm_outputs()
 
 
-write.csv(outputs$annual, 'outputs/gene_drive_fix_annual.csv')
-write.csv(outputs$u5, 'outputs/gene_drive_fix_annual_u5.csv')
+write.csv(outputs$annual, 'outputs/updated_run_annual.csv')
+write.csv(outputs$u5, 'outputs/updated_run_annual_u5.csv')
 
-write.csv(outputs$monthly, 'outputs/gene_drive_fix_monthly.csv')
+write.csv(outputs$monthly, 'outputs/updated_run_monthly.csv')
 
-saveRDS(outputs$annual, 'outputs/gene_drive_fix_annual.rds')
-saveRDS(outputs$u5, 'outputs/gene_drive_fix_annual_u5.rds')
+saveRDS(outputs$annual, 'outputs/updated_run_annual.rds')
+saveRDS(outputs$u5, 'outputs/updated_run_annual_u5.rds')
 
-saveRDS(outputs$monthly, 'outputs/gene_drive_fix_monthly.rds')
+saveRDS(outputs$monthly, 'outputs/updated_run_monthly.rds')
 
 
 
-pdf('plots/diagnostic_plots_itn_60_no_worst_case.pdf', width = 12, height= 10)
+pdf('plots/diagnostic_plots_updated_run.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)
-  annual<- outputs$annual |> filter(country == iso3c) |> filter(scenario!= 'worst_case')
+  annual<- outputs$annual |> filter(country == iso3c) 
 
     p<- ggplot(data= annual, mapping = aes(x= year, y= clinical * 1000, color= scenario, fill= scenario)) +
     geom_line(lwd= 0.5) +

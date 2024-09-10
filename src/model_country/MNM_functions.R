@@ -60,7 +60,7 @@ site$interventions <- site$interventions |>
     pull(itn_use)
   
   # Mass distribution scale up
-  mass <- seq(cur_use, 0.45, length.out = 16 / 3)
+  mass <- seq(cur_use, 0.45, length.out = 17 / 3)
   # Some small continuous dist between mass years
   continuous <- 0.1
     
@@ -161,6 +161,13 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
     
   }
 
+  if(site_name == 'Oromia'){
+
+    intvns<- site$interventions |>
+      mutate(irs_cov = ifelse(irs_cov == 0, irs_cov, irs_cov * 0.06))
+
+    site$interventions<- intvns
+  }
   # pull parameters for this site ----------------------------------------------
   params <- site::site_parameters(
     interventions = site$interventions,
