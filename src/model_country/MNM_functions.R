@@ -46,7 +46,7 @@ parameterise_mnm<- function(site_name,
 
 if(!scenario %like% 'txdx'){ # remove SMC for all interventions other than treatment + diagnostics
   site$interventions <- site$interventions |>
-    mutate(smc_cov = ifelse(year 2023, 0, smc_cov))
+    mutate(smc_cov = ifelse(year > 2023, 0, smc_cov))
 
 }
   if(scenario %like% c('nets')){
