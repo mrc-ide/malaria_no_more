@@ -29,24 +29,32 @@ parameterise_mnm<- function(site_name,
                                 coverage_data,
                                 scenario_name = 'malaria-r3-r4-bluesky')
   
-  if(scenario == 'no-vaccination' | scenario == 'worst_case'){
+  if(!scenario %like% 'vaccines'){
     
     site$interventions$r21_booster_coverage<- 0
     site$interventions$r21_coverage<- 0
+
   }
   
+  if(scenario %like% 'txdx'){
   # scale treatment up to 80%  from 2022-2034
-site$interventions <- site$interventions |>
-  mutate(tx_cov = ifelse(year %in% c(2022:2034), NA, tx_cov)) |>
-  mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
-  scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
+  site$interventions <- site$interventions |>
+    mutate(tx_cov = ifelse(year %in% c(2022:2034), NA, tx_cov)) |>
+    mutate(tx_cov = ifelse(year > 2034, 0.8, tx_cov)) |>
+    scene::linear_interpolate(vars = c("tx_cov"), group_var = names(site$sites))
+  }
 
-  if(scenario %in% c('itn_change', 'best_case')){
+if(!scenario %like% 'txdx'){ # remove SMC for all interventions other than treatment + diagnostics
+  site$interventions <- site$interventions |>
+    mutate(smc_cov = ifelse(year 2023, 0, smc_cov))
+
+}
+  if(scenario %like% c('nets')){
 # Rough example of scaling mass distributions to achieve ~80% usage by 2040
   # only update ITN coverage to scale up to 80% coverage if coverage is not at ~ 80% already by 2023 
   # there are a few cases where coverage is already this high
    itn_use_val<- site$interventions |>
-      filter(year %in% c(2021:2023)) |>
+      filter(year %in% c(2020:2022)) |>
       pull(itn_use) |>
       mean()
   
@@ -151,8 +159,7 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   site$vectors<- vex
 }
 
-  if(scenario == 'worst_case'){ # test a case where all interventions are set to zero after 2022
-
+  if(scenario == 'no_intvns'){ 
   test <- data.table(site$interventions)
 
   test[year > 2022, `:=`( irs_cov = 0, itn_input_dist = 0, itn_use = 0, smc_cov = 0, tx_cov = 0, rtss_cov = 0, pmc_cov = 0)]
@@ -180,7 +187,7 @@ if(nrow(site$vectors[species == 'gambiae']) ==1){
   )
   
 
-  if(scenario %in% c('new_tools', 'itn_change')){
+  if(scenario %like% c('genedrive')){
 
 cc <- get_init_carrying_capacity(params)
 n_vectors<- nrow(data.frame(cc))  # number of species in this site
@@ -423,7 +430,7 @@ run_mnm_model<- function(model_input){
   
   set.seed(56)
   
-  if(model_input$scenario %in% c('vaccine_scaleup', 'no-vaccination', 'worst_case')){
+  if(!model_input$scenario %like% c('vaccines')){
     model <- retry::retry(
       malariasimulation::run_simulation(timesteps = params$timesteps,
                                         parameters = params),
@@ -432,7 +439,7 @@ run_mnm_model<- function(model_input){
       interval = 3
     )
     
-  }else if(model_input$scenario %in% c('new_tools', 'best_case', 'itn_change')){
+  }else{
     
     first_phase <- retry::retry(
       malariasimulation:::run_resumable_simulation(timesteps = 365*(29 +15), # including burn-in period of 15 years

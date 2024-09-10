@@ -21,14 +21,20 @@ library(scene)
 
 # initialise orderly2 repository if you have not already
 #orderly2::orderly_init()
-# scenarios to run:
-# no-vaccination: coverage of other interventions remain constant from 2022 through 2040, no vaccines
-# new_tools: addition of a blood-stage vaccine (IE RH5). In the absence of trial efficacy data, operationalized 
-#            such that the blood-stage vaccine has 60% efficacy against  residual cases not protected by R21
-# vaccine_scaleup: 80% coverage of R21 (and 90% booster coverage) beginning in 2022
-# worst_case: remove all interventions after 2022
+# interventions to model:
+# vaccines: 80% of R21 coverage + additional 60% efficacy on residual cases in 2029 because of RH5
+# treatment: scaleup to 80% treatment coverage in 2034 + rectal artenusate resulting in 20% reduction in under-5 mortality
+# gene_drive: modelled as 95% reduction in carrying capacity of anopheles gambiae from 2032-2040
+# bednets: scaleup to 60% insecticide-treated bednet usage by 2040 (in admin1 units where this has not already been achieved)
+intvns<- c('vaccines', 'txdx', 'genedrive', 'nets')
+scenarios <- c(
+  intvns, # choose 1
+  "vaccines_txdx", "vaccines_genedrive", "vaccines_nets", "txdx_genedrive", "txdx_nets", "genedrive_nets", # choose 2
+  "vaccines_txdx_genedrive", "vaccines_txdx_nets", "vaccines_genedrive_nets", "txdx_genedrive_nets", # choose 3
+  "vaccines_txdx_genedrive_nets", # choose 4
+  "no_intvns"
+) # choose none
 
-scenarios<- c('no-vaccination', 'new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
 
 
 # to run workflow:
@@ -89,14 +95,12 @@ submit_country<- function(iso, scen, descrip, report_name){
 lapply(
   iso3cs, #  
   submit_country,
-  report_name = 'postprocess',
+  report_name = 'model_country',
   scen = 'itn_change', # c('new_tools', 'vaccine_scaleup', 'worst_case', 'best_case')
   descrip = 'updated_run' # 'scale_tx_cov'
 )
 
 hipercow::task_log_watch('c097bd8edd448ef22e2de370cde7a4a1')
-hipercow::task_log_show('5287688d011ecf04a447249887cb2995')
-hipercow::task_log_show('35b7b7522709c829344853c91d46320b')
 
 # run postprocessing
 lapply(
@@ -106,10 +110,6 @@ lapply(
   scen = 'best_case', # 'new_tools', 'vaccine_scaleup', 'worst_case'
   descrip = 'gene_drive_fix'
 )
-
-# resolved bugs:
-# some sites have more than 3 vector species (COD, GAB)-- reverted carrying code back to version that was flexible wrt/ number of vector species
-# relic postprocessing bug from last week's testing (code errored out removing a "year" column that no longer exists when transforming popluation into monthly values)
 
 # identify any jobs which failed to run
 iso3cs <- unique(coverage$country_code)

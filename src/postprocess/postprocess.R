@@ -13,47 +13,38 @@ library(dplyr)
 library(ggpubr)
 library(ggforce)
 
-new_tools<- 'new_tools'
-scaleup<- 'vaccine_scaleup'
-worst_case<- 'worst_case'
-best_case<- 'best_case'
-itn<- 'itn_change'
+# list of scenarios
+intvns<- c('vaccines', 'txdx', 'genedrive', 'nets')
+scenarios <- c(
+  intvns, # choose 1
+  "vaccines_txdx", "vaccines_genedrive", "vaccines_nets", "txdx_genedrive", "txdx_nets", "genedrive_nets", # choose 2
+  "vaccines_txdx_genedrive", "vaccines_txdx_nets", "vaccines_genedrive_nets", "txdx_genedrive_nets", # choose 3
+  "vaccines_txdx_genedrive_nets", # choose 4
+  "no_intvns"
+) # choose none
+  
+annual<- data.table()
+monthly<- data.table()
+  
+  for (scenario in scenarios) {
+    
+    message(scenario)
+    metadata<-orderly2::orderly_dependency("model_country", quote(latest(parameter:iso3c == this:iso3c &&
+                                                                   parameter:description == this:description &&
+                                                                   parameter:scenrario == environmet:scenario)),
+                                           c(file.rds = "outputs.rds"))
+    
+    ann<- readRDS(metadata$files$here)$annual
+    month<- readRDS(metadata$files$here)$monthly
 
-orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                             parameter:scenario == environment:new_tools &&
-                             parameter:description == this:description)", c(new_tools.rds = "outputs.rds"))
-orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                             parameter:scenario == environment:scaleup &&
-                             parameter:description == this:description)", c(scaleup.rds = "outputs.rds"))
-orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                             parameter:scenario == environment:worst_case &&
-                             parameter:description == this:description)", c(worst_case.rds = "outputs.rds"))                         
-# orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-#                               parameter:scenario == environment:best_case &&
-#                               parameter:description == this:description)", c(best_case.rds = "outputs.rds"))
- orderly2::orderly_dependency("model_country", "latest(parameter:iso3c == this:iso3c &&
-                              parameter:scenario == environment:itn &&
-                              parameter:description == this:description)", c(itn_60.rds = "outputs.rds"))
-
-
-new_tools<- readRDS('new_tools.rds')
-scaleup<- readRDS('scaleup.rds')
-worst_case<- readRDS('worst_case.rds')
-#best_case<- readRDS('best_case.rds')
-itn_60<- readRDS('itn_60.rds')
-# moving_average <- function(series, klags) {
-#   return(
-#       lag(
-#           zoo::rollmean(series, klags, fill = NA), floor(klags / 2)
-#       )
-#   )
-# }
-annual<- bind_rows(new_tools$annual, scaleup$annual, worst_case$annual, itn_60$annual)
-monthly<- bind_rows(new_tools$monthly, scaleup$monthly, worst_case$monthly, itn_60$monthly)
+    annual<- bind_rows(annual, ann, fill = TRUE)
+    monthly<- bind_rows(monthly, month, fill = TRUE)
+    
+}
 
 # pull and modify annual rates under 5 after 2025 down 20% (assuming rectal artenusate administration)
 annual<- annual |>
-  mutate(mortality = ifelse(year > 2024 & age <= 5 & scenario == 'best_case', mortality*.8, mortality))
+  mutate(mortality = ifelse(year > 2024 & age <= 5 & scenario == 'txdx', mortality*.8, mortality))
 
 # aggregate up deaths under 5 to visualize in separate dataset
 annual_children<- annual |>
@@ -96,10 +87,6 @@ annual_agg <- annual |>
     clinical = cases / pop,
     mortality = deaths / pop
   )  |>
-#   mutate(clinical_avg= moving_average(clinical, klags= 20)) |>
-#   mutate(clinical_avg = ifelse(is.na(clinical_avg), clinical, clinical_avg)) |>
-#   mutate(clinical = clinical_avg) |>
-#  select(-clinical_avg) |>
   mutate(cases = clinical * pop) |> # backcalculate smoothed cases
   filter(site_name != TRUE) |>
   mutate(cases = ifelse(is.na(cases), 0, cases),
