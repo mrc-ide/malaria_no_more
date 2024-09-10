@@ -49,7 +49,7 @@ if(!scenario %like% 'txdx'){ # remove SMC for all interventions other than treat
     mutate(smc_cov = ifelse(year > 2023, 0, smc_cov))
 
 }
-  if(scenario %like% c('nets')){
+  if(scenario %like% 'nets'){
 # Rough example of scaling mass distributions to achieve ~80% usage by 2040
   # only update ITN coverage to scale up to 80% coverage if coverage is not at ~ 80% already by 2023 
   # there are a few cases where coverage is already this high
