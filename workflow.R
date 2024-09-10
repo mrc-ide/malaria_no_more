@@ -55,10 +55,9 @@ extra_iso3cs<- c('BWA', 'GNQ', 'ERI', 'GAB', 'GMB', 'NAM', 'RWA', 'SEN', 'ZWE')
 iso3cs<- c(vimc_iso3cs, extra_iso3cs)
 
 
-
 # run model country
 lapply(
-  iso3cs, #  
+  'AGO',  
   submit_country,
   report_name = 'model_country',
   scenarios = {scenarios},
