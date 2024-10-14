@@ -259,7 +259,7 @@ var_shp <- function(year, scenario){
 
 # run function
 year <- seq(2023, 2040, 1) 
-scenario <- c("new_tools", "vaccine_scaleup")
+scenario <- c("new_tools", "vaccine_scaleup", "worst_case")
 
 vars <- crossing(year, scenario)
 
@@ -446,12 +446,12 @@ rename(lives_saved_WMR2000 = deaths_averted_cumulative_WMR2000,
        lives_saved_worst_case_itn60_2023 = deaths_averted_cumulative_worst_case_itn60_2023,
        lives_saved_worst_case_nt_2023_u5 = deaths_averted_cumulative_worst_case_nt_2023_u5,
        lives_saved_worst_case_itn60_2023_u5 = deaths_averted_cumulative_worst_case_itn60_2023_u5) |>
-  mutate(across(c(lives_saved_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) round(x)))
+  mutate(across(c(deaths_diff_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) round(x)))
 
 # aggregate over countries
 lives_saved_total_world <- lives_saved_total |>
   group_by(year) |>
-  summarize(across(c(lives_saved_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) sum(x)))
+  summarize(across(c(deaths_diff_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) sum(x)))
 
 # instances where lives saved under the worst cases scenario is greater than relative to the 2000 baseline
 test <- lives_saved_total |> filter(lives_saved_worst_case_nt > lives_saved_WMR2000) |>
@@ -470,20 +470,64 @@ ggplot(data = lives_saved_total_world) +
 
 # save as .csv
 lives_saved_total_country <- lives_saved_total |>
-  dplyr::select(country, country_name, year, lives_saved_WMR2000, lives_saved_worst_case_itn60_2023)
-  
-lives_saved_total_world |>
+  dplyr::select(country, country_name, year, 
+                lives_saved_WMR2000, lives_saved_worst_case_itn60_2023,
+                lives_saved_worst_case_itn60_2023_u5,
+                deaths_diff_worst_case_itn60_2023, 
+                deaths_diff_worst_case_itn60_2023_u5)
+
+# SSA
+output <- lives_saved_total_world |>
   filter(year >= 2023) |>
-  dplyr::select(year, lives_saved_worst_case_itn60_2023) |>
-  rename(lives_saved = lives_saved_worst_case_itn60_2023) |>
-write_csv("./files/modelling_lives_saved_2040_SSA.csv")
+  dplyr::select(year, 
+                lives_saved_worst_case_itn60_2023, lives_saved_worst_case_itn60_2023_u5,
+                deaths_diff_worst_case_itn60_2023, deaths_diff_worst_case_itn60_2023_u5) |>
+  rename(lives_saved_cumulative = lives_saved_worst_case_itn60_2023,
+         lives_saved_cumulative_u5 = lives_saved_worst_case_itn60_2023_u5,
+         lives_saved_annual = deaths_diff_worst_case_itn60_2023,
+         lives_saved_annual_u5 = deaths_diff_worst_case_itn60_2023_u5)
 
-lives_saved_total_country |>
-  filter(year == 2040) |>
-  dplyr::select(country, country_name, year, lives_saved_worst_case_itn60_2023) |>
-  rename(lives_saved = lives_saved_worst_case_itn60_2023) |>
-write_csv( "./files/modelling_lives_saved_2040_country.csv")
+ggplot(data = output) + 
+  geom_line(aes(x = year, y = lives_saved_annual)) + 
+  geom_line(aes(x = year, y = lives_saved_annual_u5), lty = 2)
 
+# check that the sum of annual outputs ~ the cumulative outputs
+round(sum(output$lives_saved_annual), -2) == round(output$lives_saved_cumulative[18], -2); round(sum(output$lives_saved_annual_u5), -2) == round(output$lives_saved_cumulative_u5[18], -2)
+
+write_csv(output, "./files/modelling_lives_saved_2040_SSA.csv")
+
+# by country
+output <- lives_saved_total_country |>
+  filter(year >= 2023) |>
+  dplyr::select(country, country_name, year, 
+                lives_saved_worst_case_itn60_2023, lives_saved_worst_case_itn60_2023_u5,
+                deaths_diff_worst_case_itn60_2023, deaths_diff_worst_case_itn60_2023_u5) |>
+  rename(lives_saved_cumulative = lives_saved_worst_case_itn60_2023,
+         lives_saved_cumulative_u5 = lives_saved_worst_case_itn60_2023_u5,
+         lives_saved_annual = deaths_diff_worst_case_itn60_2023,
+         lives_saved_annual_u5 = deaths_diff_worst_case_itn60_2023_u5)
+
+ggplot(data = output) + 
+  geom_line(aes(x = year, y = lives_saved_annual)) + 
+  geom_line(aes(x = year, y = lives_saved_annual_u5), lty = 2) + 
+  facet_wrap(~ country)
+
+write_csv(output, "./files/modelling_lives_saved_2040_country.csv")
+
+
+# take a look at top country lives saved between 2025 and 2039
+output |> filter(year >= 2025 & year <= 2039) |>
+  ungroup() |>
+  mutate(lives_saved_SSA = sum(lives_saved_annual),
+         lives_saved_SSA_u5 = sum(lives_saved_annual_u5)) |>
+  group_by(country, country_name, lives_saved_SSA, lives_saved_SSA_u5) |>
+  summarize(lives_saved = sum(lives_saved_annual),
+            lives_saved_u5 = sum(lives_saved_annual_u5)) |>
+  rowwise() |>
+  mutate(p = lives_saved / lives_saved_SSA * 100,
+         p_u5 = lives_saved_u5 / lives_saved_SSA_u5 * 100) |>
+  arrange(-lives_saved_u5)
+  # arrange(-lives_saved)
 
 # look at mortality rates
 MR <- combined |> 

@@ -7,8 +7,13 @@ WHO <- read_csv("./files/WHO_elimination.csv") |>
   mutate(country = case_when(country == "R\xe9union" ~ "Réunion", 
                              TRUE ~ country)) |>
   mutate(year = year_elim, 
-         year = case_when(is.na(year) ~ year_disappear,
-                          TRUE ~ year))
+         year = case_when(is.na(year) & !is.na(year_disappear) ~ year_disappear,
+                          is.na(year) & is.na(year_disappear) ~ year_0_not_certified,
+                          TRUE ~ year)) |>
+  # taking out duplicate Kazakhstan entry
+  filter(!(country == "Kazakhstan" & year == 2012))
+
+summary(WHO$year)
 
 # read in WHO country list doc
 # source: https://data.who.int/countries
