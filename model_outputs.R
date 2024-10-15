@@ -404,6 +404,10 @@ lives_saved_total <- combined |>
                                             year > 2022 ~  deaths_new_tools * scalingf_22),
          final_deaths_new_tools_u5 = case_when(year <= 2022 ~ 0,
                                             year > 2022 ~  deaths_u5_new_tools * scalingf_22),
+         final_deaths_vs = case_when(year <= 2022 ~ annual_deaths,
+                                         year > 2022 ~  deaths_vaccine_scaleup * scalingf_22),
+         final_deaths_vs_u5 = case_when(year <= 2022 ~ 0,
+                                            year > 2022 ~ deaths_u5_vaccine_scaleup * scalingf_22),
          final_deaths_itn_60 = case_when(year <= 2022 ~ annual_deaths,
                                             year > 2022 ~  deaths_itn_change * scalingf_22),
          final_deaths_itn_60_u5 = case_when(year <= 2022 ~ 0,
@@ -429,7 +433,11 @@ lives_saved_total <- combined |>
          deaths_diff_worst_case_nt_2023_u5 = case_when(year <= 2022 ~ 0,
                                                     year > 2022 ~ final_deaths_worst_case_u5 - final_deaths_new_tools_u5),
          deaths_diff_worst_case_itn60_2023_u5 = case_when(year <= 2022 ~ 0,
-                                                       year > 2022 ~ final_deaths_worst_case_u5 - final_deaths_itn_60_u5)
+                                                       year > 2022 ~ final_deaths_worst_case_u5 - final_deaths_itn_60_u5),
+         deaths_diff_worst_case_vs_2023 = case_when(year <= 2022 ~ 0,
+                                                       year > 2022 ~ final_deaths_worst_case - final_deaths_vs),
+         deaths_diff_worst_case_vs_2023_u5 = case_when(year <= 2022 ~ 0,
+                                                          year > 2022 ~ final_deaths_worst_case_u5 - final_deaths_vs_u5)
          ) |> 
   ungroup() |>  group_by(country) |>
   # calculating cumulative deaths averted
@@ -438,25 +446,39 @@ lives_saved_total <- combined |>
          deaths_averted_cumulative_worst_case_nt_2023 = cumsum(deaths_diff_worst_case_nt_2023),
          deaths_averted_cumulative_worst_case_itn60_2023 = cumsum(deaths_diff_worst_case_itn60_2023),
          deaths_averted_cumulative_worst_case_nt_2023_u5 = cumsum(deaths_diff_worst_case_nt_2023_u5),
-         deaths_averted_cumulative_worst_case_itn60_2023_u5 = cumsum(deaths_diff_worst_case_itn60_2023_u5)) |> 
+         deaths_averted_cumulative_worst_case_itn60_2023_u5 = cumsum(deaths_diff_worst_case_itn60_2023_u5),
+         deaths_averted_cumulative_worst_case_vs_2023 = cumsum(deaths_diff_worst_case_vs_2023),
+         deaths_averted_cumulative_worst_case_vs_2023_u5 = cumsum(deaths_diff_worst_case_vs_2023_u5)) |> 
   # renaming variables as lives saved
 rename(lives_saved_WMR2000 = deaths_averted_cumulative_WMR2000,
        lives_saved_worst_case_nt = deaths_averted_cumulative_worst_case_nt,
        lives_saved_worst_case_nt_2023 = deaths_averted_cumulative_worst_case_nt_2023,
        lives_saved_worst_case_itn60_2023 = deaths_averted_cumulative_worst_case_itn60_2023,
        lives_saved_worst_case_nt_2023_u5 = deaths_averted_cumulative_worst_case_nt_2023_u5,
-       lives_saved_worst_case_itn60_2023_u5 = deaths_averted_cumulative_worst_case_itn60_2023_u5) |>
-  mutate(across(c(deaths_diff_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) round(x)))
+       lives_saved_worst_case_itn60_2023_u5 = deaths_averted_cumulative_worst_case_itn60_2023_u5,
+       lives_saved_worst_case_vs_2023 = deaths_averted_cumulative_worst_case_vs_2023,
+       lives_saved_worst_case_vs_2023_u5 = deaths_averted_cumulative_worst_case_vs_2023_u5
+       ) |>
+  mutate(across(c(final_deaths_new_tools:final_deaths_worst_case_u5, deaths_diff_WMR2000:lives_saved_worst_case_vs_2023_u5), \(x) round(x)))
 
 # aggregate over countries
 lives_saved_total_world <- lives_saved_total |>
   group_by(year) |>
-  summarize(across(c(deaths_diff_WMR2000:lives_saved_worst_case_itn60_2023_u5), \(x) sum(x)))
+  summarize(across(c(final_deaths_new_tools:final_deaths_worst_case_u5, deaths_diff_WMR2000:lives_saved_worst_case_vs_2023_u5), \(x) sum(x)))
 
 # instances where lives saved under the worst cases scenario is greater than relative to the 2000 baseline
 test <- lives_saved_total |> filter(lives_saved_worst_case_nt > lives_saved_WMR2000) |>
   group_by(country) |>
   summarize(n = n())
+
+# plot worst case deaths
+ggplot(data = lives_saved_total_world) + 
+  geom_line(aes(x = year, y = final_deaths_worst_case))
+
+lives_saved_total_world |>
+  filter(year >= 2025 & year <= 2039) |>
+  summarize(annual_deaths = mean(final_deaths_worst_case),
+            annual_deaths_u5 = mean(final_deaths_worst_case_u5))
 
 # plot lives saved
 ggplot(data = lives_saved_total_world) + 
@@ -513,6 +535,33 @@ ggplot(data = output) +
   facet_wrap(~ country)
 
 write_csv(output, "./files/modelling_lives_saved_2040_country.csv")
+
+
+# lives saved overall values for film experience
+output <- lives_saved_total_world |>
+  filter(year == 2040 | year == 2022) |>
+  dplyr::select(year, 
+                lives_saved_worst_case_itn60_2023, lives_saved_worst_case_itn60_2023_u5,
+                lives_saved_worst_case_vs_2023, lives_saved_worst_case_vs_2023_u5) 
+
+
+lives_saved_total_world |>
+  filter(year >= 2025 & year <= 2039) |>
+  ungroup() |>
+  rename(lives_saved_nt = deaths_diff_worst_case_itn60_2023,
+         lives_saved_nt_u5 = deaths_diff_worst_case_itn60_2023_u5,
+         lives_saved_vs = deaths_diff_worst_case_vs_2023,
+         lives_saved_vs_u5 = deaths_diff_worst_case_vs_2023_u5,
+         deaths_annual_wc = final_deaths_worst_case,
+         deaths_annual_wc_u5 = final_deaths_worst_case_u5) |>
+  
+  summarize(lives_saved_nt = sum(lives_saved_nt),
+         lives_saved_nt_u5 = sum(lives_saved_nt_u5),
+         lives_saved_vs = sum(lives_saved_vs),
+         lives_saved_vs_u5 = sum(lives_saved_vs_u5),
+         deaths_wc = mean(deaths_annual_wc),
+         deaths_wc_u5 = mean(deaths_annual_wc_u5))
+  
 
 
 # take a look at top country lives saved between 2025 and 2039
