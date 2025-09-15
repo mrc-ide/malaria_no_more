@@ -1,10 +1,13 @@
-
-mrc-ide/malariasimulation@8bb953cfc92825611a69219f60ebda917362fc1a
+repo::https://mrc-ide.r-universe.dev
+orderly2
+mrc-ide/malariasimulation@8bb953c
 mrc-ide/postie@dalys
-mrc-ide/netz@netz2
+mrc-ide/site@vimc
 mrc-ide/scene
-mrc-ide/orderly2
 mrc-ide/vimcmalaria
+
+
+
 
 
 data.table
@@ -21,6 +24,7 @@ rmarkdown
 scales
 ggpubr
 plotly
+
 
 
 

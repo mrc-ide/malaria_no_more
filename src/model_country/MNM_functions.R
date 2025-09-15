@@ -33,6 +33,8 @@ parameterise_mnm<- function(site_name,
     
     site$interventions$r21_booster_coverage<- 0
     site$interventions$r21_coverage<- 0
+    site$interventions$coverage<- 0
+    site$interventions$booster_coverage<- 0
 
   }
   
@@ -46,9 +48,10 @@ parameterise_mnm<- function(site_name,
 
 if(!scenario %like% 'txdx'){ # remove SMC for all interventions other than treatment + diagnostics
   site$interventions <- site$interventions |>
-    mutate(smc_cov = ifelse(year > 2023, 0, smc_cov))
-
+    mutate(smc_cov = ifelse(year > 2023, 0, smc_cov)) |>
+    mutate(pmc_cov = ifelse(year > 2023, 0, pmc_cov)) 
 }
+  
   if(scenario %like% 'nets'){
 # Rough example of scaling mass distributions to achieve ~80% usage by 2040
   # only update ITN coverage to scale up to 80% coverage if coverage is not at ~ 80% already by 2023 

@@ -1,5 +1,5 @@
 # orderly metadata  ----
-orderly2::orderly_parameters(iso3c = NULL,
+parms<- orderly2::orderly_parameters(iso3c = NULL,
                              description = NULL)
 
 orderly2::orderly_description('Process and plot country scenarios for Malaria No More Artwork')
@@ -14,15 +14,22 @@ library(ggpubr)
 library(ggforce)
 
 # list of scenarios
-intvns<- c('vaccines', 'txdx', 'genedrive', 'nets')
-scenarios <- c(
-  intvns, # choose 1
-  "vaccines_txdx", "vaccines_genedrive", "vaccines_nets", "txdx_genedrive", "txdx_nets", "genedrive_nets", # choose 2
-  "vaccines_txdx_genedrive", "vaccines_txdx_nets", "vaccines_genedrive_nets", "txdx_genedrive_nets", # choose 3
-  "vaccines_txdx_genedrive_nets", # choose 4
-  "no_intvns"
-) # choose none
+# intvns<- c('vaccines', 'txdx', 'genedrive', 'nets')
+# scenarios <- c(
+#   intvns, # choose 1
+#   "vaccines_txdx", "vaccines_genedrive", "vaccines_nets", "txdx_genedrive", "txdx_nets", "genedrive_nets", # choose 2
+#   "vaccines_txdx_genedrive", "vaccines_txdx_nets", "vaccines_genedrive_nets", "txdx_genedrive_nets", # choose 3
+#   "vaccines_txdx_genedrive_nets", # choose 4
+#   "no_intvns"
+# ) # choose none
   
+scenarios<- c('BAU', 'no_intvns') # run subset for Anh paper
+
+
+iso3c<- parms$iso3c
+description<- parms$description
+
+
 annual<- data.table()
 monthly<- data.table()
   
@@ -31,20 +38,20 @@ monthly<- data.table()
     message(scenario)
     metadata<-orderly2::orderly_dependency("model_country", quote(latest(parameter:iso3c == this:iso3c &&
                                                                    parameter:description == this:description &&
-                                                                   parameter:scenrario == environmet:scenario)),
-                                           c(file.rds = "outputs.rds"))
+                                                                   parameter:scenario == environment:scenario)),
+                                           c("${scenario}.rds" = "outputs.rds"))
     
     ann<- readRDS(metadata$files$here)$annual
     month<- readRDS(metadata$files$here)$monthly
 
-    annual<- bind_rows(annual, ann, fill = TRUE)
-    monthly<- bind_rows(monthly, month, fill = TRUE)
+    annual<- bind_rows(annual, ann)
+    monthly<- bind_rows(monthly, month)
     
 }
 
 # pull and modify annual rates under 5 after 2025 down 20% (assuming rectal artenusate administration)
 annual<- annual |>
-  mutate(mortality = ifelse(year > 2024 & age <= 5 & scenario == 'txdx', mortality*.8, mortality))
+  mutate(mortality = ifelse(year > 2024 & age <= 5 & scenario %like% 'txdx', mortality*.8, mortality))
 
 # aggregate up deaths under 5 to visualize in separate dataset
 annual_children<- annual |>
@@ -98,7 +105,7 @@ annual_agg <- annual |>
 
 # calculate lives saved
 worst_case<- annual_agg |>
-  filter(scenario == 'worst_case') |>
+  filter(scenario == 'no_intvns') |>
   rename(deaths_baseline = deaths) |>
   ungroup() |>
   select(site_name, urban_rural, year, deaths_baseline) 
@@ -131,7 +138,7 @@ monthly_agg <- monthly |>
           mortality = ifelse(is.na(mortality), 0, mortality)) 
 
 worst_case_monthly<- monthly_agg |>
-  filter(scenario == 'worst_case') |>
+  filter(scenario == 'no_intvns') |>
   rename(deaths_baseline = deaths) |>
   ungroup() |>
   select(site_name, urban_rural, month, deaths_baseline)
@@ -145,20 +152,3 @@ saveRDS(annual_agg, 'annual_output.rds')
 saveRDS(annual_children, 'annual_children.rds')
 saveRDS(monthly_agg, 'monthly_output.rds')
 
-# quick plot of outputs 
-# pdf('ben_plots.pdf')
-#   message(site)
-# annual_agg<- data.table(annual_agg)
-
-
-    p<- ggplot(data= annual_agg, mapping = aes(x= year, y= clinical, color= scenario, fill= scenario)) +
-    geom_line(lwd= 0.5) +
-    facet_wrap(~site_name) +
-    theme_classic() +
-    labs(x= 'Year',
-         y= 'Clinical incidence, all-age',
-         title= 'All-age clinical incidence over time by scenario',
-         subtitle = iso3c)
-  
-  print(p)
-# dev.off()

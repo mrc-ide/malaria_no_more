@@ -1,8 +1,9 @@
 # orderly metadata  ----
+library(orderly2)
 orderly2::orderly_parameters(
-  iso3c = NULL,
-  scenario  = NULL,
-  description  = NULL)
+  iso3c = 'SEN',
+  scenario  = 'BAU',
+  description  = 'test')
 
 
 
@@ -10,6 +11,7 @@ orderly2::orderly_description('Model country scenarios for Malaria No More Artwo
 orderly2::orderly_artefact(description = 'Model output', files=  'outputs.rds')
 # packages and functions ----
 library(site)
+library(orderly2)
 library(data.table)
 library(dplyr)
 library(scene)

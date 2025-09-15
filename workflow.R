@@ -9,6 +9,7 @@
 #remotes::install_github('mrc-ide/vimcmalaria')
 
 
+
 # load packages
 library(orderly2)
 library(malariasimulation)
@@ -25,11 +26,13 @@ source('workflow_functions.R')
 # initialise orderly2 repository if you have not already
 #orderly2::orderly_init()
 # interventions to model:
+#BAU: carry interventions over 
 # vaccines: 80% of R21 coverage + additional 60% efficacy on residual cases in 2029 because of RH5
 # treatment: scaleup to 80% treatment coverage in 2034 + rectal artenusate resulting in 20% reduction in under-5 mortality
 # gene_drive: modelled as 95% reduction in carrying capacity of anopheles gambiae from 2032-2040
 # bednets: scaleup to 60% insecticide-treated bednet usage by 2040 (in admin1 units where this has not already been achieved)
 intvns<- c('vaccines', 'txdx', 'genedrive', 'nets')
+intvns<- 'no_intvns'
 scenarios <- c(
   intvns, # choose 1
   "vaccines_txdx", "vaccines_genedrive", "vaccines_nets", "txdx_genedrive", "txdx_nets", "genedrive_nets", # choose 2
@@ -38,12 +41,12 @@ scenarios <- c(
   "no_intvns"
 ) # choose none
 
-
+# malariasimulation version @8bb953c
 
 # to run workflow:
 # this will error out unless you have saved coverage and site file inputs in your src/model-country directory--
 # contact Lydia for filepaths
-hipercow::hipercow_init(driver = 'windows')
+hipercow::hipercow_init(driver = 'dide-windows')
 hipercow::hipercow_provision()
 hipercow::hipercow_environment_create(sources = 'src/model_country/MNM_functions.R')
 hipercow::hipercow_configuration()
@@ -57,29 +60,29 @@ iso3cs<- c(vimc_iso3cs, extra_iso3cs)
 
 # run model country
 lapply(
-  'AGO',  
+  iso3cs,  
   submit_country,
   report_name = 'model_country',
-  scenarios = {scenarios},
-  descrip = 'exhibit_test_runs' 
+  scenarios = 'no_intvns',
+  descrip = 'Anh_paper' 
 )
 
 hipercow::task_log_watch('c097bd8edd448ef22e2de370cde7a4a1')
 
 # run postprocessing
 lapply(
-  iso3cs[29:40], # c(vimc_iso3cs, extra_iso3cs)
+  iso3cs, # c(vimc_iso3cs, extra_iso3cs)
   submit_country,
   report_name = 'postprocess',
-  scen = 'best_case', # 'new_tools', 'vaccine_scaleup', 'worst_case'
-  descrip = 'gene_drive_fix'
+  scen = 'BAU', # 'new_tools', 'vaccine_scaleup', 'worst_case'
+  descrip = 'Anh_paper'
 )
 
 # identify any jobs which failed to run
 iso3cs <- unique(coverage$country_code)
 reports <- vimcmalaria::completed_reports('model_country')
-problem <- reports |> filter(description == 'gene_drive_fix') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
-  group_by(iso3c) |> summarize(n = n()) |> filter(n < 3) |> select(iso3c) |> as.vector() |> unlist()
+problem <- reports |> filter(description == 'Anh_paper') |> group_by(iso3c, scenario) |> summarize(n = n()) |>
+  group_by(iso3c) |> summarize(n = n()) |> filter(n < 2) |> select(iso3c) |> as.vector() |> unlist()
 
 
 # pull report metadata
@@ -87,22 +90,22 @@ reports <- vimcmalaria::completed_reports('model_country')
 
 
 # pull all of the outputs
-outputs<- compile_mnm_outputs(descrip = 'updated_run')
+outputs<- compile_mnm_outputs(descrip = 'Anh_paper')
 
 
-write.csv(outputs$annual, 'outputs/updated_run_annual.csv')
-write.csv(outputs$u5, 'outputs/updated_run_annual_u5.csv')
+write.csv(outputs$annual, 'outputs/Anh_paper/updated_run_annual.csv')
+write.csv(outputs$u5, 'outputs/Anh_paper/updated_run_annual_u5.csv')
 
-write.csv(outputs$monthly, 'outputs/updated_run_monthly.csv')
+write.csv(outputs$monthly, 'outputs/Anh_paper/updated_run_monthly.csv')
 
-saveRDS(outputs$annual, 'outputs/updated_run_annual.rds')
-saveRDS(outputs$u5, 'outputs/updated_run_annual_u5.rds')
+saveRDS(outputs$annual, 'outputs/Anh_paper/updated_run_annual.rds')
+saveRDS(outputs$u5, 'outputs/Anh_paper/updated_run_annual_u5.rds')
 
-saveRDS(outputs$monthly, 'outputs/updated_run_monthly.rds')
+saveRDS(outputs$monthly, 'outputs/Anh_paper/updated_run_monthly.rds')
 
 
 
-pdf('plots/diagnostic_plots_updated_run.pdf', width = 12, height= 10)
+pdf('outputs/Anh_paper/diagnostic_plots_updated_run_Anh.pdf', width = 12, height= 10)
 for(iso3c in unique(outputs$annual$country)){
 
   message(iso3c)

@@ -1,4 +1,6 @@
 submit_country<- function(iso, scenarios, descrip, report_name){
+
+  require(orderly2)
   if (iso %in% vimc_iso3cs){
 
     site_data <- readRDS(paste0('src/model_country/site_files/', iso, '_new_EIR.rds'))
